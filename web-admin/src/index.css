@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&display=swap');
+
+:root {
+  --bg: #08080F;
+  --surface: #0F0F1A;
+  --surface2: #16162A;
+  --border: rgba(255,255,255,0.08);
+  --primary: #FF5C3A;
+  --primary-glow: rgba(255,92,58,0.25);
+  --accent: #00E5A0;
+  --text: #F0F0FF;
+  --muted: #7070A0;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+h1,h2,h3,h4,h5 { font-family: 'Syne', sans-serif; }
+
+.mesh-bg {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+}
+.mesh-bg::before {
+  content: ''; position: absolute;
+  top: -20%; left: -10%; width: 60%; height: 60%;
+  background: radial-gradient(ellipse, rgba(255,92,58,0.12) 0%, transparent 70%);
+  animation: drift1 12s ease-in-out infinite alternate;
+}
+.mesh-bg::after {
+  content: ''; position: absolute;
+  bottom: -20%; right: -10%; width: 55%; height: 55%;
+  background: radial-gradient(ellipse, rgba(0,229,160,0.08) 0%, transparent 70%);
+  animation: drift2 15s ease-in-out infinite alternate;
+}
+@keyframes drift1 {
+  from { transform: translate(0,0) scale(1); }
+  to   { transform: translate(5%,8%) scale(1.1); }
+}
+@keyframes drift2 {
+  from { transform: translate(0,0) scale(1); }
+  to   { transform: translate(-5%,-6%) scale(1.15); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up   { animation: fadeUp 0.6s ease forwards; }
+.delay-100 { animation-delay: 0.1s; opacity: 0; }
+.delay-200 { animation-delay: 0.2s; opacity: 0; }
+.delay-300 { animation-delay: 0.3s; opacity: 0; }
+.delay-400 { animation-delay: 0.4s; opacity: 0; }
+.delay-500 { animation-delay: 0.5s; opacity: 0; }

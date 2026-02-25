@@ -1,0 +1,23 @@
+{
+  "name": "agendamx",
+  "version": "0.1.0",
+  "description": "Plataforma de agendamiento de citas para negocios mexicanos con WhatsApp nativo",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "web-admin",
+    "web-public",
+    "mobile"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:web-admin": "npm run dev --workspace=web-admin",
+    "dev:web-public": "npm run dev --workspace=web-public",
+    "dev:mobile": "npm run start --workspace=mobile"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.24",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.2.1"
+  }
+}

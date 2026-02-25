@@ -1,0 +1,126 @@
+/**
+ * AgendaMX — Cron de recordatorios WhatsApp
+ *
+ * Ejecutar con: node src/jobs/reminders.js
+ * En producción con crontab: * /15 * * * * node /var/www/agendamx/backend/src/jobs/reminders.js
+ *
+ * Este proceso:
+ *  1. Busca citas confirmadas en las próximas 24 horas sin recordatorio 24h enviado
+ *  2. Busca citas confirmadas en la próxima 1 hora sin recordatorio 1h enviado
+ *  3. Busca citas completadas hace 2 horas para enviar mensaje de seguimiento
+ *  4. Envía los mensajes y marca como enviados
+ */
+
+require('dotenv').config({ path: require('path').join(__dirname, '../../.env') })
+const db = require('../config/db')
+const wa = require('../services/whatsappService')
+
+const log = (msg) => console.log(`[${new Date().toISOString()}] 📲 ${msg}`)
+
+async function runReminders() {
+  log('Iniciando cron de recordatorios...')
+
+  try {
+    // ─── 1. Recordatorios 24 horas ────────────────────────────────
+    const r24 = await db.query(`
+      SELECT a.id, a.starts_at, a.client_name, a.client_phone,
+             s.name as service_name,
+             b.name as business_name
+      FROM appointments a
+      JOIN services s ON s.id = a.service_id
+      JOIN businesses b ON b.id = a.business_id
+      WHERE a.status = 'confirmed'
+        AND a.reminder_24h_sent = false
+        AND a.starts_at BETWEEN NOW() + INTERVAL '23 hours'
+                             AND NOW() + INTERVAL '25 hours'
+    `)
+
+    for (const appt of r24.rows) {
+      log(`Enviando recordatorio 24h a ${appt.client_name} (${appt.client_phone})`)
+      const result = await wa.sendReminder24h({
+        clientPhone:   appt.client_phone,
+        clientName:    appt.client_name,
+        businessName:  appt.business_name,
+        serviceName:   appt.service_name,
+        startsAt:      appt.starts_at,
+      })
+      if (result.ok) {
+        await db.query(
+          'UPDATE appointments SET reminder_24h_sent = true WHERE id = $1',
+          [appt.id]
+        )
+        log(`✅ 24h enviado a ${appt.client_name}`)
+      } else {
+        log(`❌ Error 24h para ${appt.client_name}: ${JSON.stringify(result.error)}`)
+      }
+    }
+
+    // ─── 2. Recordatorios 1 hora ──────────────────────────────────
+    const r1h = await db.query(`
+      SELECT a.id, a.starts_at, a.client_name, a.client_phone,
+             s.name as service_name,
+             b.name as business_name
+      FROM appointments a
+      JOIN services s ON s.id = a.service_id
+      JOIN businesses b ON b.id = a.business_id
+      WHERE a.status = 'confirmed'
+        AND a.reminder_1h_sent = false
+        AND a.starts_at BETWEEN NOW() + INTERVAL '55 minutes'
+                             AND NOW() + INTERVAL '65 minutes'
+    `)
+
+    for (const appt of r1h.rows) {
+      log(`Enviando recordatorio 1h a ${appt.client_name}`)
+      const result = await wa.sendReminder1h({
+        clientPhone:   appt.client_phone,
+        clientName:    appt.client_name,
+        businessName:  appt.business_name,
+        serviceName:   appt.service_name,
+        startsAt:      appt.starts_at,
+      })
+      if (result.ok) {
+        await db.query(
+          'UPDATE appointments SET reminder_1h_sent = true WHERE id = $1',
+          [appt.id]
+        )
+        log(`✅ 1h enviado a ${appt.client_name}`)
+      } else {
+        log(`❌ Error 1h para ${appt.client_name}: ${JSON.stringify(result.error)}`)
+      }
+    }
+
+    // ─── 3. Seguimiento post-cita (2 horas después) ───────────────
+    const followups = await db.query(`
+      SELECT a.id, a.client_name, a.client_phone,
+             b.name as business_name, b.slug
+      FROM appointments a
+      JOIN businesses b ON b.id = a.business_id
+      WHERE a.status = 'completed'
+        AND a.ends_at BETWEEN NOW() - INTERVAL '2.5 hours'
+                          AND NOW() - INTERVAL '1.5 hours'
+        AND NOT EXISTS (
+          SELECT 1 FROM appointments a2
+          WHERE a2.id = a.id
+            AND (a.updated_at > a.ends_at + INTERVAL '2 hours')
+        )
+    `)
+
+    for (const appt of followups.rows) {
+      log(`Enviando follow-up a ${appt.client_name}`)
+      await wa.sendFollowUp({
+        clientPhone:  appt.client_phone,
+        clientName:   appt.client_name,
+        businessName: appt.business_name,
+        slug:         appt.slug,
+      })
+    }
+
+    log(`✅ Cron completado — 24h: ${r24.rows.length}, 1h: ${r1h.rows.length}, follow-up: ${followups.rows.length}`)
+  } catch (err) {
+    console.error('[CRON ERROR]', err)
+  } finally {
+    process.exit(0)
+  }
+}
+
+runReminders()
