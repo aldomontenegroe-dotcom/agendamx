@@ -83,14 +83,47 @@ exports.create = async (req, res) => {
       return res.status(409).json({ error: 'Ese horario ya está ocupado' })
     }
 
+    // Create or find client
+    let clientRecord = null
+    if (clientPhone) {
+      const waService = require('../services/whatsappService')
+      const normalizedPhone = waService.normalizePhone(clientPhone)
+      const existing = await client.query(
+        'SELECT id FROM clients WHERE business_id = $1 AND phone = $2',
+        [businessId, normalizedPhone]
+      )
+      if (existing.rows.length === 0) {
+        clientRecord = await client.query(
+          'INSERT INTO clients (business_id, name, phone) VALUES ($1,$2,$3) RETURNING id',
+          [businessId, clientName, normalizedPhone]
+        )
+      } else {
+        clientRecord = existing
+      }
+    }
+
     const result = await client.query(
       `INSERT INTO appointments
-         (business_id, service_id, starts_at, ends_at, client_name, client_phone, staff_notes, price, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'confirmed')
+         (business_id, service_id, client_id, starts_at, ends_at, client_name, client_phone, staff_notes, price, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'confirmed')
        RETURNING *`,
-      [businessId, serviceId, startsAt, endsAt.toISOString(), clientName, clientPhone || null, staffNotes || null, price]
+      [businessId, serviceId, clientRecord?.rows[0]?.id || null, startsAt, endsAt.toISOString(), clientName, clientPhone || null, staffNotes || null, price]
     )
     await client.query('COMMIT')
+
+    // WhatsApp confirmation to client (fire-and-forget)
+    if (clientPhone) {
+      const waService = require('../services/whatsappService')
+      const normalizedPhone = waService.normalizePhone(clientPhone)
+      const biz = await db.query('SELECT name, slug FROM businesses WHERE id = $1', [businessId])
+      const svc = await db.query('SELECT name FROM services WHERE id = $1', [serviceId])
+      waService.sendConfirmation({
+        clientPhone: normalizedPhone, clientName,
+        businessName: biz.rows[0]?.name, serviceName: svc.rows[0]?.name,
+        startsAt, price, slug: biz.rows[0]?.slug,
+      }).catch(e => console.error('WA admin-create error:', e))
+    }
+
     res.status(201).json({ appointment: result.rows[0] })
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {})
