@@ -1,4 +1,5 @@
 const db = require('../config/db')
+const emailService = require('../services/emailService')
 
 // ─── Listar citas del negocio ─────────────────────────────────────
 exports.list = async (req, res) => {
@@ -301,6 +302,21 @@ exports.book = async (req, res) => {
         ownerPhone: r.rows[0].phone, clientName, clientPhone: normalizedPhone,
         serviceName: service.name, startsAt,
       })).catch(e => console.error('WA owner error:', e))
+
+    // Email notifications (fire-and-forget)
+    // Client email — check if client record has email
+    db.query('SELECT email FROM clients WHERE id = $1', [client.rows[0].id])
+      .then(r => r.rows[0]?.email && emailService.sendAppointmentConfirmation(r.rows[0].email, {
+        clientName, businessName: biz.rows[0].name,
+        serviceName: service.name, startsAt, price: service.price, slug,
+      })).catch(e => console.error('Email client error:', e))
+
+    // Owner email notification
+    db.query('SELECT email FROM users WHERE business_id = $1 AND role = $2', [businessId, 'owner'])
+      .then(r => r.rows[0]?.email && emailService.sendOwnerNotification(r.rows[0].email, {
+        clientName, clientPhone: normalizedPhone,
+        serviceName: service.name, startsAt,
+      })).catch(e => console.error('Email owner error:', e))
 
     res.status(201).json({
       appointment: {

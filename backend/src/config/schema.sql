@@ -22,6 +22,8 @@ CREATE TABLE businesses (
   cover_url     TEXT,
   plan          VARCHAR(20) DEFAULT 'free',  -- free | starter | pro | business
   plan_expires_at TIMESTAMPTZ,
+  stripe_customer_id     VARCHAR(255),
+  stripe_subscription_id VARCHAR(255),
   is_active     BOOLEAN DEFAULT true,
   template_id       VARCHAR(50),
   seo_category      VARCHAR(200),

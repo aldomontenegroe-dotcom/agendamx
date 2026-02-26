@@ -2,6 +2,7 @@ const bcrypt   = require('bcryptjs')
 const jwt      = require('jsonwebtoken')
 const { v4: uuid } = require('uuid')
 const db       = require('../config/db')
+const emailService = require('../services/emailService')
 
 // ─── Helpers ──────────────────────────────────────────────────────
 const genToken = (payload) =>
@@ -88,6 +89,11 @@ exports.register = async (req, res) => {
         businessId: business.id,
         role: user.role,
       })
+
+      // Welcome email (fire-and-forget)
+      emailService.sendWelcomeEmail(email.toLowerCase(), {
+        name, businessName, slug,
+      }).catch(e => console.error('Welcome email error:', e))
 
       res.status(201).json({
         token,

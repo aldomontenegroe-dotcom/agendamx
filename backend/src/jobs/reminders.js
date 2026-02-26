@@ -14,6 +14,7 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') })
 const db = require('../config/db')
 const wa = require('../services/whatsappService')
+const email = require('../services/emailService')
 
 const log = (msg) => console.log(`[${new Date().toISOString()}] 📲 ${msg}`)
 
@@ -25,10 +26,12 @@ async function runReminders() {
     const r24 = await db.query(`
       SELECT a.id, a.starts_at, a.client_name, a.client_phone,
              s.name as service_name,
-             b.name as business_name
+             b.name as business_name,
+             c.email as client_email
       FROM appointments a
       JOIN services s ON s.id = a.service_id
       JOIN businesses b ON b.id = a.business_id
+      LEFT JOIN clients c ON c.id = a.client_id
       WHERE a.status = 'confirmed'
         AND a.reminder_24h_sent = false
         AND a.starts_at BETWEEN NOW() + INTERVAL '23 hours'
@@ -53,16 +56,26 @@ async function runReminders() {
       } else {
         log(`❌ Error 24h para ${appt.client_name}: ${JSON.stringify(result.error)}`)
       }
+
+      // Email reminder (fire-and-forget)
+      if (appt.client_email) {
+        email.sendAppointmentReminder(appt.client_email, {
+          clientName: appt.client_name, businessName: appt.business_name,
+          serviceName: appt.service_name, startsAt: appt.starts_at, hoursUntil: 24,
+        }).catch(e => console.error('Email 24h error:', e))
+      }
     }
 
     // ─── 2. Recordatorios 1 hora ──────────────────────────────────
     const r1h = await db.query(`
       SELECT a.id, a.starts_at, a.client_name, a.client_phone,
              s.name as service_name,
-             b.name as business_name
+             b.name as business_name,
+             c.email as client_email
       FROM appointments a
       JOIN services s ON s.id = a.service_id
       JOIN businesses b ON b.id = a.business_id
+      LEFT JOIN clients c ON c.id = a.client_id
       WHERE a.status = 'confirmed'
         AND a.reminder_1h_sent = false
         AND a.starts_at BETWEEN NOW() + INTERVAL '55 minutes'
@@ -87,14 +100,23 @@ async function runReminders() {
       } else {
         log(`❌ Error 1h para ${appt.client_name}: ${JSON.stringify(result.error)}`)
       }
+
+      if (appt.client_email) {
+        email.sendAppointmentReminder(appt.client_email, {
+          clientName: appt.client_name, businessName: appt.business_name,
+          serviceName: appt.service_name, startsAt: appt.starts_at, hoursUntil: 1,
+        }).catch(e => console.error('Email 1h error:', e))
+      }
     }
 
     // ─── 3. Seguimiento post-cita (2 horas después) ───────────────
     const followups = await db.query(`
       SELECT a.id, a.client_name, a.client_phone,
-             b.name as business_name, b.slug
+             b.name as business_name, b.slug,
+             c.email as client_email
       FROM appointments a
       JOIN businesses b ON b.id = a.business_id
+      LEFT JOIN clients c ON c.id = a.client_id
       WHERE a.status = 'completed'
         AND a.followup_sent = false
         AND a.ends_at BETWEEN NOW() - INTERVAL '2.5 hours'
@@ -115,6 +137,13 @@ async function runReminders() {
           [appt.id]
         )
         log(`✅ Follow-up enviado a ${appt.client_name}`)
+      }
+
+      if (appt.client_email) {
+        email.sendFollowUp(appt.client_email, {
+          clientName: appt.client_name, businessName: appt.business_name,
+          slug: appt.slug,
+        }).catch(e => console.error('Email followup error:', e))
       }
     }
 
