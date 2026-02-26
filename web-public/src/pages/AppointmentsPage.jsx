@@ -192,6 +192,7 @@ export default function AppointmentsPage() {
         }),
       })
       closeModal()
+      setSelectedDate(formDate)
       fetchAppointments()
     } catch (err) {
       alert(err.message || 'Error al crear cita')
