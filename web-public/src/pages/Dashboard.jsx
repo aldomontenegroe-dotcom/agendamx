@@ -366,24 +366,45 @@ export default function Dashboard({ user, onLogout }) {
         <div style={{
           background: 'rgba(255,255,255,0.04)', borderRadius: 12,
           border: '1px solid rgba(255,255,255,0.07)', padding: '12px',
-          display: 'flex', alignItems: 'center', gap: 10,
+          display: 'flex', flexDirection: 'column', gap: 10,
         }}>
-          <div style={{
-            width: 34, height: 34, borderRadius: '50%',
-            background: 'linear-gradient(135deg, #FF5C3A, #FF8C42)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 13, fontWeight: 700, color: 'white', flexShrink: 0,
-          }}>
-            {(user.name || 'U')[0].toUpperCase()}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              width: 34, height: 34, borderRadius: '50%',
+              background: 'linear-gradient(135deg, #FF5C3A, #FF8C42)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 13, fontWeight: 700, color: 'white', flexShrink: 0,
+            }}>
+              {(user.name || 'U')[0].toUpperCase()}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</p>
+              <p style={{ fontSize: 11, color: '#7070A0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.businessName}</p>
+            </div>
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</p>
-            <p style={{ fontSize: 11, color: '#7070A0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.businessName}</p>
-          </div>
-          <button onClick={onLogout} title="Cerrar sesion"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7070A0', padding: 4, flexShrink: 0 }}>
-            <IconX />
+          <button onClick={onLogout}
+            style={{
+              width: '100%', padding: '8px 0', borderRadius: 8,
+              border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)',
+              cursor: 'pointer', color: '#7070A0', fontSize: 12, fontWeight: 500,
+              fontFamily: 'DM Sans, sans-serif', transition: 'all 0.15s',
+            }}
+            onMouseOver={e => { e.currentTarget.style.color = '#FF5C3A'; e.currentTarget.style.borderColor = 'rgba(255,92,58,0.2)' }}
+            onMouseOut={e => { e.currentTarget.style.color = '#7070A0'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
+          >
+            Cerrar sesión
           </button>
+        </div>
+
+        {/* Footer */}
+        <div style={{ textAlign: 'center', paddingTop: 12 }}>
+          <a href="https://popservices.tech" target="_blank" rel="noreferrer"
+            style={{ fontSize: 10, color: '#50506A', textDecoration: 'none', fontFamily: 'DM Sans, sans-serif', transition: 'color 0.15s' }}
+            onMouseOver={e => e.currentTarget.style.color = '#7070A0'}
+            onMouseOut={e => e.currentTarget.style.color = '#50506A'}
+          >
+            by popservices
+          </a>
         </div>
       </aside>
 

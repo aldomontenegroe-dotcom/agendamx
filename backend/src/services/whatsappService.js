@@ -27,7 +27,7 @@ async function sendText(phone, text) {
       messaging_product: 'whatsapp',
       to,
       type: 'text',
-      text: { body: text, preview_url: false },
+      text: { body: text, preview_url: true },
     }, { headers: HEADERS })
     return { ok: true, messageId: res.data.messages?.[0]?.id }
   } catch (err) {
@@ -56,7 +56,8 @@ async function sendConfirmation({ clientPhone, clientName, businessName, service
     `💰 *Total:* $${price} MXN\n\n` +
     `📍 *Negocio:* ${businessName}\n\n` +
     `Para reagendar o cancelar responde este mensaje.\n\n` +
-    `_Agendado con AgendaMX · agendamx.net/${slug}_`
+    `_Agendado con AgendaMX_\n` +
+    `👉 https://agendamx.net/${slug}`
 
   return sendText(clientPhone, message)
 }
@@ -125,7 +126,7 @@ async function sendFollowUp({ clientPhone, clientName, businessName, slug }) {
     `Hola ${clientName}, esperamos que hayas quedado muy contento/a con tu servicio en *${businessName}*.\n\n` +
     `Si te gustó, ¡déjanos una reseña! Nos ayuda mucho 🙏\n\n` +
     `Y cuando quieras agendar tu próxima cita, ya sabes:\n` +
-    `👉 agendamx.net/${slug}`
+    `👉 https://agendamx.net/${slug}`
 
   return sendText(clientPhone, message)
 }

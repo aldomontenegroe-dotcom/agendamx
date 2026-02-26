@@ -660,10 +660,17 @@ export default function LandingPage({ onLogin, onRegister }) {
         <p style={{
           fontSize: 14,
           color: colors.muted,
-          margin: 0,
+          margin: '0 0 8px 0',
         }}>
           © 2026 AgendaMX. Hecho en México 🇲🇽
         </p>
+        <a href="https://popservices.tech" target="_blank" rel="noreferrer"
+          style={{ fontSize: 12, color: colors.muted, textDecoration: 'none', opacity: 0.7, transition: 'opacity 0.15s' }}
+          onMouseOver={e => e.currentTarget.style.opacity = '1'}
+          onMouseOut={e => e.currentTarget.style.opacity = '0.7'}
+        >
+          by popservices
+        </a>
       </footer>
     </div>
   );
