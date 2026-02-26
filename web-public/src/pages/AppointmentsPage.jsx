@@ -121,11 +121,19 @@ export default function AppointmentsPage() {
   const fetchAppointments = () => {
     setLoading(true)
     setError(null)
-    let url = `/api/appointments?date=${selectedDate}`
-    if (statusFilter) url += `&status=${statusFilter}`
+    const isPending = statusFilter === 'pending'
+    let url = isPending ? '/api/appointments' : `/api/appointments?date=${selectedDate}`
+    if (statusFilter && !isPending) url += `&status=${statusFilter}`
     apiFetch(url)
       .then(data => {
-        const list = Array.isArray(data) ? data : (data.appointments || [])
+        let list = Array.isArray(data) ? data : (data.appointments || [])
+        if (isPending) {
+          const now = new Date()
+          list = list.filter(a =>
+            ['pending', 'confirmed'].includes(a.status) &&
+            new Date(a.starts_at) >= now
+          )
+        }
         list.sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at))
         setAppointments(list)
       })
@@ -253,7 +261,7 @@ export default function AppointmentsPage() {
             Citas
           </h1>
           <p style={{ color: '#7070A0', fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}>
-            {appointments.length} cita{appointments.length !== 1 ? 's' : ''} {statusFilter ? `(${filterButtons.find(f => f.key === statusFilter)?.label || statusFilter})` : ''} &middot; {dateDisplay}
+            {appointments.length} cita{appointments.length !== 1 ? 's' : ''} {statusFilter ? `(${filterButtons.find(f => f.key === statusFilter)?.label || statusFilter})` : ''} {statusFilter !== 'pending' && <>&middot; {dateDisplay}</>}
           </p>
         </div>
         <button
@@ -276,7 +284,8 @@ export default function AppointmentsPage() {
 
       {/* Date Selector + Status Filters */}
       <div className="fade-up delay-100" style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
-        {/* Date */}
+        {/* Date (hidden when Pendientes filter is active) */}
+        {statusFilter !== 'pending' && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <input
             type="date"
@@ -310,6 +319,7 @@ export default function AppointmentsPage() {
             Hoy
           </button>
         </div>
+        )}
 
         {/* Status Filters */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -404,6 +414,11 @@ export default function AppointmentsPage() {
               >
                 {/* Time column */}
                 <div style={{ minWidth: 56, textAlign: 'center' }}>
+                  {statusFilter === 'pending' && (
+                    <p style={{ fontSize: 10, color: '#7070A0', fontFamily: 'DM Sans, sans-serif', marginBottom: 2, textTransform: 'capitalize' }}>
+                      {new Date(appt.starts_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                    </p>
+                  )}
                   <p style={{ fontFamily: 'Syne, sans-serif', fontSize: 15, fontWeight: 700, color: '#FF5C3A' }}>
                     {time}
                   </p>
