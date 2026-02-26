@@ -74,7 +74,7 @@ exports.create = async (req, res) => {
       `SELECT id FROM appointments
        WHERE business_id = $1
          AND status NOT IN ('cancelled')
-         AND tsrange(starts_at, ends_at) && tsrange($2::timestamptz, $3::timestamptz)
+         AND tstzrange(starts_at, ends_at) && tstzrange($2::timestamptz, $3::timestamptz)
        FOR UPDATE`,
       [businessId, startsAt, endsAt.toISOString()]
     )
@@ -291,7 +291,7 @@ exports.book = async (req, res) => {
       `SELECT id FROM appointments
        WHERE business_id = $1
          AND status NOT IN ('cancelled')
-         AND tsrange(starts_at, ends_at) && tsrange($2::timestamptz, $3::timestamptz)
+         AND tstzrange(starts_at, ends_at) && tstzrange($2::timestamptz, $3::timestamptz)
        FOR UPDATE`,
       [businessId, startsAt, endsAt.toISOString()]
     )
