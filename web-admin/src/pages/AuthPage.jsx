@@ -238,7 +238,13 @@ function RegisterForm({ onSwitch, auth }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const data = await auth.register(form);
+    const data = await auth.register({
+      name: form.ownerName,
+      businessName: form.businessName,
+      email: form.email,
+      phone: form.phone,
+      password: form.password,
+    });
     if (data) window.location.href = "/dashboard";
   };
 
