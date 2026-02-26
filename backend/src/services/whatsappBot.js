@@ -70,6 +70,27 @@ function greetWord(tone) {
 const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 const EMOJIS_NUM = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟']
 
+// ─── Resolve business from slug ──────────────────────────────────
+async function resolveBusinessBySlug(slug) {
+  const result = await db.query(
+    `SELECT id, name, slug, template_id, welcome_message, address, city, state
+     FROM businesses WHERE slug = $1`,
+    [slug]
+  )
+  return result.rows[0] || null
+}
+
+// ─── Detect slug in first message ────────────────────────────────
+function detectSlug(text) {
+  const lower = text.toLowerCase().trim()
+  // Pattern: "Hola slug-del-negocio" or just "slug-del-negocio"
+  const match = lower.match(/^(?:hola\s+|buenas?\s+|hey\s+)?([a-z0-9][-a-z0-9]+[a-z0-9])$/)
+  if (match && match[1].includes('-')) return match[1]
+  // Also check if the whole message is a slug (contains at least one hyphen)
+  if (/^[a-z0-9][-a-z0-9]+[a-z0-9]$/.test(lower) && lower.includes('-')) return lower
+  return null
+}
+
 // ─── Resolve which business this phone belongs to ────────────────
 async function resolveBusiness(phone) {
   // 1. From most recent appointment
@@ -133,6 +154,18 @@ async function handleMessage(phone, text, contactName) {
     return handleBookingStep(phone, trimmed, state, contactName)
   }
 
+  // ─── Try to detect business slug from message ──────────────
+  const detectedSlug = detectSlug(trimmed)
+  if (detectedSlug) {
+    const bizFromSlug = await resolveBusinessBySlug(detectedSlug)
+    if (bizFromSlug) {
+      setState(phone, { businessId: bizFromSlug.id, businessName: bizFromSlug.name, slug: bizFromSlug.slug })
+      const tone = getTone(bizFromSlug.template_id)
+      const pendingAppt = await getPendingAppointment(phone)
+      return handleGreet(phone, bizFromSlug, tone, contactName, pendingAppt)
+    }
+  }
+
   // ─── Resolve business context ────────────────────────────────
   const pendingAppt = await getPendingAppointment(phone)
   let biz = state ? { id: state.businessId, name: state.businessName, slug: state.slug } : null
@@ -148,10 +181,9 @@ async function handleMessage(phone, text, contactName) {
   // ─── No business context at all ──────────────────────────────
   if (!biz) {
     return wa.sendText(phone,
-      `¡Hola! 👋\n\nSoy el asistente de AgendaMX.\n\n` +
-      `Para agendar una cita, visita la página de tu negocio en:\n` +
-      `👉 agendamx.net\n\n` +
-      `Si ya tienes una cita, responde con *SÍ* para confirmar o *NO* para cancelar.`
+      `¡Hola! 👋\n\nSoy el asistente de *AgendaMX*.\n\n` +
+      `Para agendar una cita, necesito saber con qué negocio deseas agendar.\n\n` +
+      `📲 Pide a tu negocio su link de AgendaMX y toca el botón de WhatsApp desde ahí.`
     )
   }
 

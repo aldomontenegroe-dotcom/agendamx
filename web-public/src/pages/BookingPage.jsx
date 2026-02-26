@@ -446,7 +446,7 @@ function Step4Confirmation({ business, booking }) {
       </div>
 
       {/* Botón WhatsApp */}
-      <a href={`https://wa.me/${(business.phone || '').replace(/\s+/g,'')}?text=${waMessage}`} target="_blank" rel="noreferrer"
+      <a href={`https://wa.me/523349828421?text=${waMessage}`} target="_blank" rel="noreferrer"
         style={{
           display:'flex', alignItems:'center', justifyContent:'center', gap:10,
           padding:'15px', borderRadius:14, textDecoration:'none',
@@ -569,6 +569,25 @@ export default function BookingPage({ slug }) {
           </div>
         </div>
       </div>
+
+      {/* WhatsApp floating button */}
+      <a href={`https://wa.me/523349828421?text=${encodeURIComponent('Hola ' + slug)}`}
+        target="_blank" rel="noreferrer"
+        style={{
+          position:'fixed', bottom:24, right:24, zIndex:100,
+          width:56, height:56, borderRadius:'50%',
+          background:'linear-gradient(135deg, #25D366, #128C7E)',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          boxShadow:'0 4px 20px rgba(37,211,102,0.4)',
+          color:'white', textDecoration:'none',
+          transition:'transform .2s',
+        }}
+        onMouseOver={e => e.currentTarget.style.transform = 'scale(1.1)'}
+        onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
+        title="Agendar por WhatsApp"
+      >
+        <IconWA />
+      </a>
 
       {/* Booking card */}
       <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', padding:'24px 16px 40px' }}>
