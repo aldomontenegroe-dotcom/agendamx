@@ -184,7 +184,7 @@ export default function AppointmentsPage() {
       await apiFetch('/api/appointments', {
         method: 'POST',
         body: JSON.stringify({
-          serviceId: parseInt(formServiceId, 10),
+          serviceId: formServiceId,
           clientName: formClientName.trim(),
           clientPhone: formClientPhone.trim() || null,
           startsAt,
