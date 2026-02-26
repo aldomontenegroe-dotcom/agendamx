@@ -3,18 +3,18 @@ import { useState } from 'react'
 const API = import.meta.env.VITE_API_URL || ''
 
 const TEMPLATES = [
-  { id: 'barberia', emoji: '\uD83D\uDC88', name: 'Barbería', tagline: 'Cortes y estilos', color: '#C87533' },
-  { id: 'salon-belleza', emoji: '\uD83D\uDC87\u200D\u2640\uFE0F', name: 'Salón de Belleza', tagline: 'Estilismo y color', color: '#E91E8C' },
-  { id: 'veterinaria', emoji: '\uD83D\uDC3E', name: 'Veterinaria', tagline: 'Cuidado animal', color: '#4CAF50' },
-  { id: 'spa-masaje', emoji: '\uD83E\uDDD6\u200D\u2640\uFE0F', name: 'Spa & Masaje', tagline: 'Relajación total', color: '#9C27B0' },
-  { id: 'dentista', emoji: '\uD83E\uDDB7', name: 'Dentista', tagline: 'Salud dental', color: '#00BCD4' },
-  { id: 'psicologo', emoji: '\uD83E\uDDE0', name: 'Psicólogo', tagline: 'Bienestar mental', color: '#673AB7' },
-  { id: 'nutriologo', emoji: '\uD83E\uDD57', name: 'Nutriólogo', tagline: 'Alimentación sana', color: '#8BC34A' },
-  { id: 'fotografo', emoji: '\uD83D\uDCF8', name: 'Fotógrafo', tagline: 'Captura momentos', color: '#FF9800' },
-  { id: 'tatuador', emoji: '\uD83C\uDFA8', name: 'Tatuador', tagline: 'Arte en piel', color: '#F44336' },
-  { id: 'yoga-fitness', emoji: '\uD83E\uDDD8', name: 'Yoga & Fitness', tagline: 'Cuerpo y mente', color: '#009688' },
-  { id: 'tutor', emoji: '\uD83D\uDCDA', name: 'Tutor', tagline: 'Educación', color: '#3F51B5' },
-  { id: 'medico', emoji: '\uD83E\uDE7A', name: 'Médico General', tagline: 'Consulta médica', color: '#2196F3' },
+  { id: 'barberia', emoji: '💈', name: 'Barbería', tagline: 'Cortes y estilos', color: '#C87533' },
+  { id: 'salon-belleza', emoji: '💇‍♀️', name: 'Salón de Belleza', tagline: 'Estilismo y color', color: '#E91E8C' },
+  { id: 'veterinaria', emoji: '🐾', name: 'Veterinaria', tagline: 'Cuidado animal', color: '#4CAF50' },
+  { id: 'spa-masaje', emoji: '🧖‍♀️', name: 'Spa & Masaje', tagline: 'Relajación total', color: '#9C27B0' },
+  { id: 'dentista', emoji: '🦷', name: 'Dentista', tagline: 'Salud dental', color: '#00BCD4' },
+  { id: 'psicologo', emoji: '🧠', name: 'Psicólogo', tagline: 'Bienestar mental', color: '#673AB7' },
+  { id: 'nutriologo', emoji: '🥗', name: 'Nutriólogo', tagline: 'Alimentación sana', color: '#8BC34A' },
+  { id: 'fotografo', emoji: '📸', name: 'Fotógrafo', tagline: 'Captura momentos', color: '#FF9800' },
+  { id: 'tatuador', emoji: '🎨', name: 'Tatuador', tagline: 'Arte en piel', color: '#F44336' },
+  { id: 'yoga-fitness', emoji: '🧘', name: 'Yoga & Fitness', tagline: 'Cuerpo y mente', color: '#009688' },
+  { id: 'tutor', emoji: '📚', name: 'Tutor', tagline: 'Educación', color: '#3F51B5' },
+  { id: 'medico', emoji: '🩺', name: 'Médico General', tagline: 'Consulta médica', color: '#2196F3' },
 ]
 
 const IconBack = () => (
@@ -158,7 +158,7 @@ function Step1Template({ selected, onSelect, onNext }) {
 
       {/* Otro giro */}
       <div
-        onClick={() => onSelect({ id: 'custom', emoji: '\u2699\uFE0F', name: 'Otro giro', tagline: 'Configura manualmente', color: '#888' })}
+        onClick={() => onSelect({ id: 'custom', emoji: '⚙️', name: 'Otro giro', tagline: 'Configura manualmente', color: '#888' })}
         style={{
           padding: '14px 18px',
           borderRadius: 14,

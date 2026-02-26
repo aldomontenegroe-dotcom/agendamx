@@ -26,31 +26,31 @@ export default function LandingPage({ onLogin, onRegister }) {
 
   const features = [
     {
-      icon: '\uD83E\uDD16',
+      icon: '🤖',
       title: 'Bot de WhatsApp',
-      desc: 'Tus clientes agendan directo por WhatsApp. El bot contesta precios, horarios y confirma citas autom\u00e1ticamente.',
+      desc: 'Tus clientes agendan directo por WhatsApp. El bot contesta precios, horarios y confirma citas automáticamente.',
     },
     {
-      icon: '\uD83D\uDCF1',
-      title: 'P\u00e1gina de reservas',
-      desc: 'Cada negocio tiene su p\u00e1gina \u00fanica. Comparte el link y recibe citas 24/7.',
+      icon: '📱',
+      title: 'Página de reservas',
+      desc: 'Cada negocio tiene su página única. Comparte el link y recibe citas 24/7.',
     },
     {
-      icon: '\uD83D\uDCCA',
+      icon: '📊',
       title: 'Panel admin',
       desc: 'Ve tus citas, clientes, ingresos y servicios. Todo en un solo lugar.',
     },
     {
-      icon: '\uD83D\uDD14',
+      icon: '🔔',
       title: 'Recordatorios',
-      desc: 'Recordatorio autom\u00e1tico 24h y 1h antes. Reduce no-shows hasta 80%.',
+      desc: 'Recordatorio automático 24h y 1h antes. Reduce no-shows hasta 80%.',
     },
   ];
 
   const steps = [
     { num: '1', title: 'Registra tu negocio', desc: '2 minutos' },
     { num: '2', title: 'Comparte tu link', desc: 'con tus clientes' },
-    { num: '3', title: 'Recibe citas autom\u00e1ticas', desc: 'por WhatsApp y web' },
+    { num: '3', title: 'Recibe citas automáticas', desc: 'por WhatsApp y web' },
   ];
 
   const plans = [
@@ -63,7 +63,7 @@ export default function LandingPage({ onLogin, onRegister }) {
         '10 citas/mes',
         '1 servicio',
         'Bot WhatsApp',
-        'P\u00e1gina de reservas',
+        'Página de reservas',
       ],
     },
     {
@@ -145,7 +145,7 @@ export default function LandingPage({ onLogin, onRegister }) {
             onMouseEnter={e => e.currentTarget.style.background = colors.border}
             onMouseLeave={e => e.currentTarget.style.background = 'none'}
           >
-            Iniciar sesi\u00f3n
+            Iniciar sesión
           </button>
           <button
             onClick={onRegister}
@@ -197,7 +197,7 @@ export default function LandingPage({ onLogin, onRegister }) {
           marginBottom: 24,
           letterSpacing: '0.3px',
         }}>
-          La plataforma #1 de citas en M\u00e9xico
+          La plataforma #1 de citas en México
         </div>
         <h1 style={{
           fontFamily: "'Syne', sans-serif",
@@ -215,7 +215,7 @@ export default function LandingPage({ onLogin, onRegister }) {
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
           }}>
-            Autom\u00e1tico.
+            Automático.
           </span>
         </h1>
         <p style={{
@@ -225,7 +225,7 @@ export default function LandingPage({ onLogin, onRegister }) {
           maxWidth: 540,
           margin: '0 0 40px 0',
         }}>
-          Tu negocio recibe citas 24/7 por WhatsApp, p\u00e1gina web y panel admin. Sin esfuerzo.
+          Tu negocio recibe citas 24/7 por WhatsApp, página web y panel admin. Sin esfuerzo.
         </p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
           <button
@@ -269,7 +269,7 @@ export default function LandingPage({ onLogin, onRegister }) {
             onMouseEnter={e => e.currentTarget.style.color = colors.text}
             onMouseLeave={e => e.currentTarget.style.color = colors.muted}
           >
-            Ver demo \u2192
+            Ver demo →
           </button>
         </div>
 
@@ -282,7 +282,7 @@ export default function LandingPage({ onLogin, onRegister }) {
           flexWrap: 'wrap',
           justifyContent: 'center',
         }}>
-          {['WhatsApp Business API', 'SSL Seguro', 'Soporte en espa\u00f1ol'].map((badge) => (
+          {['WhatsApp Business API', 'SSL Seguro', 'Soporte en español'].map((badge) => (
             <div key={badge} style={{
               display: 'flex',
               alignItems: 'center',
@@ -290,7 +290,7 @@ export default function LandingPage({ onLogin, onRegister }) {
               fontSize: 13,
               color: colors.muted,
             }}>
-              <span style={{ color: colors.accent, fontSize: 14 }}>\u2713</span>
+              <span style={{ color: colors.accent, fontSize: 14 }}>✓</span>
               {badge}
             </div>
           ))}
@@ -497,7 +497,7 @@ export default function LandingPage({ onLogin, onRegister }) {
                     borderRadius: 20,
                     letterSpacing: '0.3px',
                   }}>
-                    M\u00e1s popular
+                    Más popular
                   </div>
                 )}
                 <h3 style={{
@@ -548,7 +548,7 @@ export default function LandingPage({ onLogin, onRegister }) {
                         fontWeight: 700,
                         flexShrink: 0,
                       }}>
-                        \u2713
+                        ✓
                       </span>
                       {feat}
                     </li>
@@ -620,7 +620,7 @@ export default function LandingPage({ onLogin, onRegister }) {
             color: 'rgba(255,255,255,0.55)',
             margin: '0 0 32px 0',
           }}>
-            Gratis. Sin tarjeta de cr\u00e9dito. Listo en 2 minutos.
+            Gratis. Sin tarjeta de crédito. Listo en 2 minutos.
           </p>
           <button
             onClick={onRegister}
@@ -662,7 +662,7 @@ export default function LandingPage({ onLogin, onRegister }) {
           color: colors.muted,
           margin: 0,
         }}>
-          \u00a9 2026 AgendaMX. Hecho en M\u00e9xico \uD83C\uDDF2\uD83C\uDDFD
+          © 2026 AgendaMX. Hecho en México 🇲🇽
         </p>
       </footer>
     </div>
