@@ -20,7 +20,15 @@ export default function App() {
     })
       .then(r => { if (!r.ok) throw new Error(); return r.json() })
       .then(data => {
-        setUser({ name: data.user.name, businessName: data.business.name })
+        setUser({
+          name: data.user.name,
+          email: data.user.email,
+          role: data.user.role,
+          businessName: data.business.name,
+          businessSlug: data.business.slug,
+          businessId: data.business.id,
+          businessPlan: data.business.plan,
+        })
         setScreen('dashboard')
       })
       .catch(() => {

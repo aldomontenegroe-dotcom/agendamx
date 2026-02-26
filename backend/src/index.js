@@ -32,6 +32,10 @@ app.use('/api/services',     require('./routes/services'))
 app.use('/api/appointments', require('./routes/appointments'))
 app.use('/api/whatsapp',     require('./routes/whatsapp'))
 app.use('/api/templates',    require('./routes/templates'))
+app.use('/api/businesses',     require('./routes/businesses'))
+app.use('/api/business-hours', require('./routes/businessHours'))
+app.use('/api/clients',        require('./routes/clients'))
+app.use('/api/stats',          require('./routes/stats'))
 
 // ─── Error handlers ───────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Ruta no encontrada' }))

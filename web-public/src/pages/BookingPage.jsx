@@ -1,27 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
-// ─── Mock data (vendrá del backend) ───────────────────────────────
-const BUSINESS = {
-  name: 'Barbería Don Carlos',
-  slug: 'barberia-don-carlos',
-  tagline: 'Cortes premium en Juriquilla, Querétaro',
-  phone: '+52 442 123 4567',
-  address: 'Calle Hidalgo 45, Juriquilla',
-  city: 'Querétaro',
-  rating: 4.9,
-  reviews: 312,
-  coverGradient: 'linear-gradient(135deg, #FF5C3A 0%, #1A0A05 100%)',
-  initials: 'BC',
-}
-
-const SERVICES = [
-  { id: 1, name: 'Corte clásico',        duration: 30, price: 150, icon: '✂️', popular: false },
-  { id: 2, name: 'Corte + Barba',        duration: 45, price: 220, icon: '🪒', popular: true  },
-  { id: 3, name: 'Corte + Tinte',        duration: 90, price: 450, icon: '🎨', popular: false },
-  { id: 4, name: 'Barba clásica',        duration: 20, price: 100, icon: '🧔', popular: false },
-  { id: 5, name: 'Keratina exprés',      duration: 60, price: 380, icon: '💆', popular: false },
-  { id: 6, name: 'Tratamiento capilar',  duration: 45, price: 280, icon: '✨', popular: false },
-]
+const API = import.meta.env.VITE_API_URL || ''
 
 // Generar próximos 7 días
 function getNext7Days() {
@@ -39,16 +18,6 @@ function getNext7Days() {
     })
   }
   return days
-}
-
-// Slots de horario mock
-function getSlotsForDay(dayIdx) {
-  const allSlots = ['9:00','9:30','10:00','10:30','11:00','11:30','12:00','12:30',
-                    '13:00','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00']
-  // Simular algunos ocupados
-  const busy = [[0,[1,4,7]],[1,[2,5]],[2,[0,3,8]],[3,[1,6]],[4,[4,9]],[5,[2,7]],[6,[3,5]]]
-  const busySlots = busy.find(b => b[0] === dayIdx)?.[1] || []
-  return allSlots.map((t, i) => ({ time: t, available: !busySlots.includes(i) }))
 }
 
 // ─── Iconos ───────────────────────────────────────────────────────
@@ -96,13 +65,13 @@ function StepIndicator({ step }) {
   )
 }
 
-function Step1Services({ selected, onSelect, onNext }) {
+function Step1Services({ services, selected, onSelect, onNext }) {
   return (
     <div className="fade-up">
       <h2 style={{ fontSize:20, fontWeight:800, marginBottom:6 }}>¿Qué servicio necesitas?</h2>
       <p style={{ color:'var(--muted)', fontSize:14, marginBottom:24 }}>Selecciona uno para continuar</p>
       <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:28 }}>
-        {SERVICES.map(s => {
+        {services.map(s => {
           const isSelected = selected?.id === s.id
           return (
             <div key={s.id} onClick={() => onSelect(s)}
@@ -117,18 +86,18 @@ function Step1Services({ selected, onSelect, onNext }) {
               onMouseOver={e => !isSelected && (e.currentTarget.style.borderColor = '#E0E0EE', e.currentTarget.style.transform = 'translateY(-1px)')}
               onMouseOut={e => !isSelected && (e.currentTarget.style.borderColor = 'var(--border)', e.currentTarget.style.transform = 'none')}
             >
-              <span style={{ fontSize:24 }}>{s.icon}</span>
+              <span style={{ fontSize:24 }}>{s.icon || '📋'}</span>
               <div style={{ flex:1 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:2 }}>
                   <span style={{ fontSize:15, fontWeight:600 }}>{s.name}</span>
-                  {s.popular && (
+                  {s.is_popular && (
                     <span style={{ fontSize:10, fontWeight:700, background:'#FF9500', color:'white', padding:'2px 7px', borderRadius:20 }}>
                       POPULAR
                     </span>
                   )}
                 </div>
                 <div style={{ display:'flex', gap:12, color:'var(--muted)', fontSize:13 }}>
-                  <span style={{ display:'flex', alignItems:'center', gap:4 }}><IconClock /> {s.duration} min</span>
+                  <span style={{ display:'flex', alignItems:'center', gap:4 }}><IconClock /> {s.duration_min} min</span>
                 </div>
               </div>
               <div style={{ textAlign:'right' }}>
@@ -167,24 +136,37 @@ function Step1Services({ selected, onSelect, onNext }) {
   )
 }
 
-function Step2DateTime({ service, onNext, onBack }) {
+function Step2DateTime({ slug, service, onNext, onBack }) {
   const days = getNext7Days()
   const [selDay, setSelDay] = useState(null)
   const [selTime, setSelTime] = useState(null)
-  const slots = selDay !== null ? getSlotsForDay(selDay) : []
+  const [slots, setSlots] = useState([])
+  const [slotsLoading, setSlotsLoading] = useState(false)
+
+  const selectDay = (i) => {
+    setSelDay(i)
+    setSelTime(null)
+    setSlotsLoading(true)
+    const dateStr = days[i].full.toISOString().split('T')[0]
+    fetch(`${API}/api/appointments/public/${slug}/availability?serviceId=${service.id}&date=${dateStr}`)
+      .then(r => r.json())
+      .then(data => setSlots(data.slots || []))
+      .catch(() => setSlots([]))
+      .finally(() => setSlotsLoading(false))
+  }
 
   return (
     <div className="fade-up">
       <h2 style={{ fontSize:20, fontWeight:800, marginBottom:6 }}>Elige fecha y hora</h2>
       <p style={{ color:'var(--muted)', fontSize:14, marginBottom:24 }}>
-        {service.name} · {service.duration} min · <strong style={{ color:'var(--primary)' }}>${service.price} MXN</strong>
+        {service.name} · {service.duration_min} min · <strong style={{ color:'var(--primary)' }}>${service.price} MXN</strong>
       </p>
 
       {/* Días */}
       <p style={{ fontSize:13, fontWeight:600, marginBottom:10, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.05em' }}>Fecha</p>
       <div style={{ display:'flex', gap:8, marginBottom:24, overflowX:'auto', paddingBottom:4 }}>
         {days.map((d, i) => (
-          <div key={i} onClick={() => { setSelDay(i); setSelTime(null) }}
+          <div key={i} onClick={() => selectDay(i)}
             style={{
               flexShrink:0, padding:'10px 14px', borderRadius:12,
               border:`2px solid ${selDay === i ? 'var(--primary)' : 'var(--border)'}`,
@@ -202,23 +184,33 @@ function Step2DateTime({ service, onNext, onBack }) {
       {selDay !== null && (
         <>
           <p style={{ fontSize:13, fontWeight:600, marginBottom:10, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.05em' }}>Horario disponible</p>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8, marginBottom:28 }}>
-            {slots.map((slot, i) => (
-              <div key={i} onClick={() => slot.available && setSelTime(slot.time)}
-                style={{
-                  padding:'10px 8px', borderRadius:10, textAlign:'center',
-                  border:`2px solid ${selTime === slot.time ? 'var(--primary)' : slot.available ? 'var(--border)' : 'transparent'}`,
-                  background: selTime === slot.time ? 'var(--primary-light)' : slot.available ? 'white' : '#F5F5FA',
-                  color: selTime === slot.time ? 'var(--primary)' : slot.available ? 'var(--text)' : 'var(--border)',
-                  cursor: slot.available ? 'pointer' : 'not-allowed',
-                  fontSize:13, fontWeight: selTime === slot.time ? 700 : 500,
-                  textDecoration: !slot.available ? 'line-through' : 'none',
-                  transition:'all .15s', boxShadow: selTime === slot.time ? '0 0 0 3px rgba(255,92,58,0.1)' : 'none',
-                }}>
-                {slot.time}
-              </div>
-            ))}
-          </div>
+          {slotsLoading ? (
+            <div style={{ display:'flex', justifyContent:'center', padding:'24px 0', marginBottom:28 }}>
+              <div style={{ width:24, height:24, border:'3px solid var(--border)', borderTopColor:'var(--primary)', borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
+            </div>
+          ) : slots.length === 0 ? (
+            <p style={{ color:'var(--muted)', fontSize:13, textAlign:'center', padding:'16px 0', marginBottom:28 }}>
+              No hay horarios disponibles para este día.
+            </p>
+          ) : (
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8, marginBottom:28 }}>
+              {slots.map((slot, i) => (
+                <div key={i} onClick={() => slot.available && setSelTime(slot.time)}
+                  style={{
+                    padding:'10px 8px', borderRadius:10, textAlign:'center',
+                    border:`2px solid ${selTime === slot.time ? 'var(--primary)' : slot.available ? 'var(--border)' : 'transparent'}`,
+                    background: selTime === slot.time ? 'var(--primary-light)' : slot.available ? 'white' : '#F5F5FA',
+                    color: selTime === slot.time ? 'var(--primary)' : slot.available ? 'var(--text)' : 'var(--border)',
+                    cursor: slot.available ? 'pointer' : 'not-allowed',
+                    fontSize:13, fontWeight: selTime === slot.time ? 700 : 500,
+                    textDecoration: !slot.available ? 'line-through' : 'none',
+                    transition:'all .15s', boxShadow: selTime === slot.time ? '0 0 0 3px rgba(255,92,58,0.1)' : 'none',
+                  }}>
+                  {slot.time}
+                </div>
+              ))}
+            </div>
+          )}
         </>
       )}
 
@@ -249,17 +241,40 @@ function Step2DateTime({ service, onNext, onBack }) {
   )
 }
 
-function Step3Contact({ booking, onNext, onBack }) {
+function Step3Contact({ slug, booking, onNext, onBack }) {
   const [form, setForm] = useState({ name:'', phone:'', notes:'' })
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
   const set = k => e => setForm(p => ({...p, [k]: e.target.value}))
   const valid = form.name.trim() && form.phone.trim().length >= 10
 
   const submit = async () => {
     setLoading(true)
-    await new Promise(r => setTimeout(r, 1400))
-    setLoading(false)
-    onNext(form)
+    setError(null)
+    try {
+      const day = booking.dateTime.day
+      const time = booking.dateTime.time
+      const dateStr = day.full.toISOString().split('T')[0]
+      const startsAt = `${dateStr}T${time}:00`
+      const res = await fetch(`${API}/api/appointments/public/${slug}/book`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serviceId: booking.service.id,
+          startsAt,
+          clientName: form.name,
+          clientPhone: form.phone,
+          clientNotes: form.notes || undefined,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error al agendar')
+      setLoading(false)
+      onNext(form)
+    } catch (err) {
+      setError(err.message)
+      setLoading(false)
+    }
   }
 
   const inputStyle = {
@@ -323,6 +338,16 @@ function Step3Contact({ booking, onNext, onBack }) {
         </div>
       </div>
 
+      {/* Error message */}
+      {error && (
+        <div style={{
+          background:'rgba(220,38,38,0.08)', border:'1px solid rgba(220,38,38,0.2)',
+          borderRadius:10, padding:'12px 14px', marginBottom:16,
+        }}>
+          <p style={{ fontSize:13, color:'#B91C1C', lineHeight:1.5 }}>{error}</p>
+        </div>
+      )}
+
       {/* WhatsApp note */}
       <div style={{
         display:'flex', gap:10, alignItems:'flex-start',
@@ -367,9 +392,9 @@ function Step3Contact({ booking, onNext, onBack }) {
   )
 }
 
-function Step4Confirmation({ booking }) {
+function Step4Confirmation({ business, booking }) {
   const waMessage = encodeURIComponent(
-    `Hola, acabo de agendar una cita en ${BUSINESS.name}:\n` +
+    `Hola, acabo de agendar una cita en ${business.name}:\n` +
     `📋 ${booking.service.name}\n` +
     `📅 ${booking.dateTime.day?.date} a las ${booking.dateTime.time}\n` +
     `💰 $${booking.service.price} MXN\n\nNos vemos pronto! ✂️`
@@ -402,11 +427,11 @@ function Step4Confirmation({ booking }) {
         boxShadow:'var(--shadow)',
       }}>
         {[
-          { label:'Negocio',   val: BUSINESS.name },
+          { label:'Negocio',   val: business.name },
           { label:'Servicio',  val: booking.service.name },
           { label:'Fecha',     val: `${booking.dateTime.day?.date}` },
           { label:'Hora',      val: booking.dateTime.time },
-          { label:'Duración',  val: `${booking.service.duration} min` },
+          { label:'Duración',  val: `${booking.service.duration_min} min` },
           { label:'Total',     val: `$${booking.service.price} MXN`, accent:true },
         ].map((r, i) => (
           <div key={i} style={{
@@ -421,7 +446,7 @@ function Step4Confirmation({ booking }) {
       </div>
 
       {/* Botón WhatsApp */}
-      <a href={`https://wa.me/${BUSINESS.phone.replace(/\s+/g,'')}?text=${waMessage}`} target="_blank" rel="noreferrer"
+      <a href={`https://wa.me/${(business.phone || '').replace(/\s+/g,'')}?text=${waMessage}`} target="_blank" rel="noreferrer"
         style={{
           display:'flex', alignItems:'center', justifyContent:'center', gap:10,
           padding:'15px', borderRadius:14, textDecoration:'none',
@@ -439,22 +464,61 @@ function Step4Confirmation({ booking }) {
 }
 
 // ─── Main Booking Page ─────────────────────────────────────────────
-export default function BookingPage() {
+export default function BookingPage({ slug }) {
   const [step, setStep]         = useState(0)
   const [service, setService]   = useState(null)
   const [dateTime, setDateTime] = useState({})
   const [contact, setContact]   = useState({})
 
+  const [business, setBusiness]     = useState(null)
+  const [services, setServices]     = useState([])
+  const [pageLoading, setPageLoading] = useState(true)
+  const [pageError, setPageError]   = useState(null)
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`${API}/api/businesses/public/${slug}`).then(r => { if (!r.ok) throw new Error('not found'); return r.json() }),
+      fetch(`${API}/api/services/public/${slug}`).then(r => r.json()),
+    ]).then(([bizData, svcData]) => {
+      setBusiness(bizData.business)
+      setServices(svcData.services)
+    }).catch(() => setPageError('Negocio no encontrado'))
+      .finally(() => setPageLoading(false))
+  }, [slug])
+
   const handleStep1 = () => setStep(1)
   const handleStep2 = (dt) => { setDateTime(dt); setStep(2) }
   const handleStep3 = (c)  => { setContact(c);   setStep(3) }
+
+  if (pageLoading) return (
+    <div style={{ minHeight:'100vh', background:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+      <div style={{ textAlign:'center' }}>
+        <div style={{ width:40, height:40, border:'3px solid var(--border)', borderTopColor:'var(--primary)', borderRadius:'50%', animation:'spin 0.8s linear infinite', margin:'0 auto 16px' }} />
+        <p style={{ color:'var(--muted)', fontSize:14 }}>Cargando...</p>
+      </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  )
+
+  if (pageError) return (
+    <div style={{ minHeight:'100vh', background:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+      <div style={{ textAlign:'center', padding:'24px' }}>
+        <p style={{ fontSize:48, marginBottom:16 }}>😕</p>
+        <h2 style={{ fontFamily:'Syne, sans-serif', fontSize:20, fontWeight:800, marginBottom:8 }}>Negocio no encontrado</h2>
+        <p style={{ color:'var(--muted)', fontSize:14 }}>El enlace puede estar incorrecto o el negocio ya no está disponible.</p>
+      </div>
+    </div>
+  )
+
+  const initials = business.name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase()
+  const coverGradient = `linear-gradient(135deg, ${business.accent_color || '#FF5C3A'} 0%, #1A0A05 100%)`
 
   return (
     <div style={{ minHeight:'100vh', background:'var(--bg)', display:'flex', flexDirection:'column' }}>
 
       {/* Header del negocio */}
       <div style={{
-        background: BUSINESS.coverGradient,
+        background: coverGradient,
         padding:'28px 24px 32px',
         position:'relative', overflow:'hidden',
       }}>
@@ -481,23 +545,27 @@ export default function BookingPage() {
             fontFamily:'Syne, sans-serif', fontSize:20, fontWeight:800,
             color:'white', marginBottom:14, letterSpacing:'-1px',
           }}>
-            {BUSINESS.initials}
+            {initials}
           </div>
 
           <h1 className="fade-up" style={{ fontSize:22, fontWeight:800, color:'white', marginBottom:4 }}>
-            {BUSINESS.name}
+            {business.name}
           </h1>
           <p className="fade-up d1" style={{ color:'rgba(255,255,255,0.75)', fontSize:13, marginBottom:12 }}>
-            {BUSINESS.tagline}
+            {business.tagline || business.description || ''}
           </p>
 
           <div className="fade-up d2" style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
-            <span style={{ display:'flex', alignItems:'center', gap:4, color:'rgba(255,255,255,0.8)', fontSize:13 }}>
-              <IconStar /> <strong style={{ color:'white' }}>{BUSINESS.rating}</strong> ({BUSINESS.reviews} reseñas)
-            </span>
-            <span style={{ display:'flex', alignItems:'center', gap:4, color:'rgba(255,255,255,0.7)', fontSize:13 }}>
-              <IconPin /> {BUSINESS.city}
-            </span>
+            {business.address && (
+              <span style={{ display:'flex', alignItems:'center', gap:4, color:'rgba(255,255,255,0.7)', fontSize:13 }}>
+                <IconPin /> {business.address}
+              </span>
+            )}
+            {business.city && (
+              <span style={{ display:'flex', alignItems:'center', gap:4, color:'rgba(255,255,255,0.7)', fontSize:13 }}>
+                <IconPin /> {business.city}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -514,10 +582,10 @@ export default function BookingPage() {
         }}>
           <StepIndicator step={step} />
 
-          {step === 0 && <Step1Services selected={service} onSelect={setService} onNext={handleStep1} />}
-          {step === 1 && <Step2DateTime service={service} onNext={handleStep2} onBack={() => setStep(0)} />}
-          {step === 2 && <Step3Contact booking={{ service, dateTime }} onNext={handleStep3} onBack={() => setStep(1)} />}
-          {step === 3 && <Step4Confirmation booking={{ service, dateTime, contact }} />}
+          {step === 0 && <Step1Services services={services} selected={service} onSelect={setService} onNext={handleStep1} />}
+          {step === 1 && <Step2DateTime slug={slug} service={service} onNext={handleStep2} onBack={() => setStep(0)} />}
+          {step === 2 && <Step3Contact slug={slug} booking={{ service, dateTime }} onNext={handleStep3} onBack={() => setStep(1)} />}
+          {step === 3 && <Step4Confirmation business={business} booking={{ service, dateTime, contact }} />}
         </div>
 
         {/* Footer */}

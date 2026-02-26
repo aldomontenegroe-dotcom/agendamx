@@ -19,7 +19,7 @@ exports.listPublic = async (req, res) => {
     const biz = await db.query('SELECT id FROM businesses WHERE slug = $1', [slug])
     if (!biz.rows.length) return res.status(404).json({ error: 'Negocio no encontrado' })
     const result = await db.query(
-      'SELECT id, name, description, duration_min, price, color, icon FROM services WHERE business_id = $1 AND is_active = true ORDER BY sort_order, name',
+      'SELECT id, name, description, duration_min, price, color, icon, is_popular FROM services WHERE business_id = $1 AND is_active = true ORDER BY sort_order, name',
       [biz.rows[0].id]
     )
     res.json({ services: result.rows })
