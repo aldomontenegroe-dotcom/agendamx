@@ -11,9 +11,9 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(() => !!localStorage.getItem('agendamx_token'))
 
-  useEffect(() => {
+  const fetchUser = () => {
     const token = localStorage.getItem('agendamx_token')
-    if (!token) return
+    if (!token) { setLoading(false); return }
     setLoading(true)
     fetch(`${import.meta.env.VITE_API_URL || ''}/api/auth/me`, {
       headers: { 'Authorization': `Bearer ${token}` },
@@ -28,7 +28,9 @@ export default function App() {
         setScreen('picker')
       })
       .finally(() => setLoading(false))
-  }, [screen])
+  }
+
+  useEffect(() => { fetchUser() }, [])
 
   const handleTemplatePicked = (template) => {
     setSelectedTemplate(template)
@@ -46,7 +48,7 @@ export default function App() {
         })
       } catch (e) { console.error('template apply error:', e) }
     }
-    setScreen('dashboard')
+    fetchUser()
   }
 
   const handleLogout = () => {

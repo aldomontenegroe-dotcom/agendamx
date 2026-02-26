@@ -174,14 +174,14 @@ function BrandPanel() {
 }
 
 // ─── Login Form ───────────────────────────────────────────────────────────────
-function LoginForm({ onSwitch, auth }) {
+function LoginForm({ onSwitch, auth, onAuth }) {
   const [form, setForm] = useState({ email:"", password:"" });
   const set = (f) => (e) => setForm({ ...form, [f]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const data = await auth.login(form.email, form.password);
-    if (data) window.location.href = "/dashboard";
+    if (data && onAuth) onAuth(data);
   };
 
   return (
@@ -231,7 +231,7 @@ function LoginForm({ onSwitch, auth }) {
 }
 
 // ─── Register Form ────────────────────────────────────────────────────────────
-function RegisterForm({ onSwitch, auth }) {
+function RegisterForm({ onSwitch, auth, onAuth }) {
   const [form, setForm] = useState({ businessName:"", ownerName:"", email:"", phone:"", password:"" });
   const [step, setStep] = useState(1);
   const set = (f) => (e) => setForm({ ...form, [f]: e.target.value });
@@ -245,7 +245,7 @@ function RegisterForm({ onSwitch, auth }) {
       phone: form.phone,
       password: form.password,
     });
-    if (data) window.location.href = "/dashboard";
+    if (data && onAuth) onAuth({ ...data, isNewUser: true });
   };
 
   const btnStyle = {
@@ -328,7 +328,7 @@ function RegisterForm({ onSwitch, auth }) {
 }
 
 // ─── Main AuthPage ────────────────────────────────────────────────────────────
-export default function AuthPage() {
+export default function AuthPage({ onAuth }) {
   const [mode, setMode] = useState("login");
   const [mounted, setMounted] = useState(false);
   const auth = useAuth();
@@ -386,8 +386,8 @@ export default function AuthPage() {
             background:"linear-gradient(90deg, transparent, rgba(251,191,36,0.2), transparent)" }} />
 
           {mode === "login"
-            ? <LoginForm onSwitch={switchMode} auth={auth} />
-            : <RegisterForm onSwitch={switchMode} auth={auth} />}
+            ? <LoginForm onSwitch={switchMode} auth={auth} onAuth={onAuth} />
+            : <RegisterForm onSwitch={switchMode} auth={auth} onAuth={onAuth} />}
         </div>
 
         {/* Footer */}

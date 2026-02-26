@@ -274,7 +274,7 @@ function TemplateCard({ t, index, isHovered, onHover, onLeave, onClick }) {
       }}>
         {t.name}
       </h3>
-      <p style={{ fontSize:13, color:'#5050708', marginBottom:16, color: isHovered ? '#A0A0C0' : '#505070' }}>
+      <p style={{ fontSize:13, marginBottom:16, color: isHovered ? '#A0A0C0' : '#505070' }}>
         {t.tagline}
       </p>
 
@@ -297,7 +297,7 @@ function TemplateCard({ t, index, isHovered, onHover, onLeave, onClick }) {
         border:'1px solid rgba(255,255,255,.05)',
       }}>
         <span style={{ fontSize:11, color:'#404060' }}>🕐 </span>
-        <span style={{ fontSize:11, color: isHovered ? '#6060808' : '#404060', color: isHovered ? '#606080' : '#404060' }}>
+        <span style={{ fontSize:11, color: isHovered ? '#606080' : '#404060' }}>
           {t.hours}
         </span>
       </div>
@@ -342,13 +342,13 @@ function ConfirmScreen({ t, onConfirm, onBack }) {
             <h2 style={{ fontFamily:"'Syne', sans-serif", fontSize:26, fontWeight:800, color:'#F0F0FF', marginBottom:6 }}>
               {t.name}
             </h2>
-            <p style={{ color:'#6060808', color:'#606080', fontSize:14 }}>{t.tagline}</p>
+            <p style={{ color:'#606080', fontSize:14 }}>{t.tagline}</p>
           </div>
 
           {/* Lo que se configura */}
           <div style={{ background:'rgba(255,255,255,.03)', borderRadius:14,
             border:'1px solid rgba(255,255,255,.07)', padding:'20px', marginBottom:24 }}>
-            <p style={{ fontSize:12, fontWeight:700, color:'#5050708', color:'#505070',
+            <p style={{ fontSize:12, fontWeight:700, color:'#505070',
               textTransform:'uppercase', letterSpacing:'.08em', marginBottom:14 }}>
               Se configurará automáticamente
             </p>
@@ -374,7 +374,7 @@ function ConfirmScreen({ t, onConfirm, onBack }) {
           <div style={{ display:'flex', gap:10 }}>
             <button onClick={onBack} style={{
               padding:'14px 20px', borderRadius:14, border:'2px solid rgba(255,255,255,.1)',
-              background:'transparent', color:'#6060808', color:'#606080', cursor:'pointer',
+              background:'transparent', color:'#606080', cursor:'pointer',
               fontFamily:"'DM Sans', sans-serif", fontSize:14, fontWeight:600,
             }}>
               ← Cambiar

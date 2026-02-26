@@ -96,23 +96,26 @@ async function runReminders() {
       FROM appointments a
       JOIN businesses b ON b.id = a.business_id
       WHERE a.status = 'completed'
+        AND a.followup_sent = false
         AND a.ends_at BETWEEN NOW() - INTERVAL '2.5 hours'
                           AND NOW() - INTERVAL '1.5 hours'
-        AND NOT EXISTS (
-          SELECT 1 FROM appointments a2
-          WHERE a2.id = a.id
-            AND (a.updated_at > a.ends_at + INTERVAL '2 hours')
-        )
     `)
 
     for (const appt of followups.rows) {
       log(`Enviando follow-up a ${appt.client_name}`)
-      await wa.sendFollowUp({
+      const result = await wa.sendFollowUp({
         clientPhone:  appt.client_phone,
         clientName:   appt.client_name,
         businessName: appt.business_name,
         slug:         appt.slug,
       })
+      if (result.ok) {
+        await db.query(
+          'UPDATE appointments SET followup_sent = true WHERE id = $1',
+          [appt.id]
+        )
+        log(`✅ Follow-up enviado a ${appt.client_name}`)
+      }
     }
 
     log(`✅ Cron completado — 24h: ${r24.rows.length}, 1h: ${r1h.rows.length}, follow-up: ${followups.rows.length}`)

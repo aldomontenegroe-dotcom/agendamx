@@ -28,7 +28,7 @@ exports.receive = async (req, res) => {
     const message = value.messages[0]
     const contact = value.contacts?.[0]
 
-    const from     = message.from          // número del cliente
+    const from     = wa.normalizePhone(message.from)  // normalizar para matchear con DB
     const text     = message.text?.body?.trim()?.toLowerCase() || ''
     const name     = contact?.profile?.name || 'Cliente'
 
@@ -42,7 +42,7 @@ exports.receive = async (req, res) => {
        FROM appointments a
        JOIN businesses b ON b.id = a.business_id
        JOIN services s ON s.id = a.service_id
-       WHERE wa.normalizePhone(a.client_phone) = $1
+       WHERE a.client_phone = $1
          AND a.status IN ('pending','confirmed')
          AND a.starts_at > NOW()
        ORDER BY a.starts_at ASC
@@ -87,7 +87,7 @@ exports.receive = async (req, res) => {
         )
         await wa.sendText(from,
           `📅 Para reagendar tu cita, usa este link:\n\n` +
-          `👉 https://agendamx.net/${biz.rows[0]?.slug || ''}\n\n` +
+          `👉 ${process.env.PUBLIC_BOOKING_URL || 'https://agendamx.net'}/${biz.rows[0]?.slug || ''}\n\n` +
           `Ahí puedes elegir el nuevo horario que mejor te quede.`
         )
       }

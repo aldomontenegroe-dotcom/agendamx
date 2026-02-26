@@ -23,6 +23,10 @@ CREATE TABLE businesses (
   plan          VARCHAR(20) DEFAULT 'free',  -- free | starter | pro | business
   plan_expires_at TIMESTAMPTZ,
   is_active     BOOLEAN DEFAULT true,
+  template_id       VARCHAR(50),
+  seo_category      VARCHAR(200),
+  welcome_message   TEXT,
+  accent_color      VARCHAR(7) DEFAULT '#FF5C3A',
   settings      JSONB DEFAULT '{}',
   created_at    TIMESTAMPTZ DEFAULT NOW(),
   updated_at    TIMESTAMPTZ DEFAULT NOW()
@@ -54,6 +58,8 @@ CREATE TABLE services (
   price         DECIMAL(10,2),
   currency      VARCHAR(3) DEFAULT 'MXN',
   color         VARCHAR(7) DEFAULT '#3B82F6',  -- para el calendario
+  icon          VARCHAR(10),
+  is_popular    BOOLEAN DEFAULT false,
   is_active     BOOLEAN DEFAULT true,
   sort_order    INTEGER DEFAULT 0,
   created_at    TIMESTAMPTZ DEFAULT NOW()
@@ -107,6 +113,7 @@ CREATE TABLE appointments (
   
   reminder_24h_sent BOOLEAN DEFAULT false,
   reminder_1h_sent  BOOLEAN DEFAULT false,
+  followup_sent     BOOLEAN DEFAULT false,
   
   created_at    TIMESTAMPTZ DEFAULT NOW(),
   updated_at    TIMESTAMPTZ DEFAULT NOW()

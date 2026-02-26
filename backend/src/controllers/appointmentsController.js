@@ -20,11 +20,15 @@ exports.list = async (req, res) => {
   let idx = 2
 
   if (date) {
-    query += ` AND DATE(a.starts_at AT TIME ZONE 'America/Mexico_City') = $${idx}`
+    query += ` AND DATE(a.starts_at AT TIME ZONE COALESCE((SELECT timezone FROM businesses WHERE id = $1), 'America/Mexico_City')) = $${idx}`
     params.push(date)
     idx++
   }
   if (status) {
+    const validStatuses = ['pending','confirmed','completed','cancelled','no_show']
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Status inválido' })
+    }
     query += ` AND a.status = $${idx}`
     params.push(status)
   }
@@ -49,40 +53,50 @@ exports.create = async (req, res) => {
     return res.status(400).json({ error: 'Servicio, nombre de cliente y fecha requeridos' })
   }
 
+  const client = await db.pool.connect()
   try {
-    const service = await db.query(
+    await client.query('BEGIN')
+
+    const service = await client.query(
       'SELECT duration_min, price FROM services WHERE id = $1 AND business_id = $2',
       [serviceId, businessId]
     )
     if (service.rows.length === 0) {
+      await client.query('ROLLBACK')
       return res.status(404).json({ error: 'Servicio no encontrado' })
     }
     const { duration_min, price } = service.rows[0]
     const endsAt = new Date(new Date(startsAt).getTime() + duration_min * 60000)
 
-    // Verificar disponibilidad
-    const conflict = await db.query(
+    // Verificar disponibilidad con lock
+    const conflict = await client.query(
       `SELECT id FROM appointments
        WHERE business_id = $1
          AND status NOT IN ('cancelled')
-         AND tsrange(starts_at, ends_at) && tsrange($2::timestamptz, $3::timestamptz)`,
+         AND tsrange(starts_at, ends_at) && tsrange($2::timestamptz, $3::timestamptz)
+       FOR UPDATE`,
       [businessId, startsAt, endsAt.toISOString()]
     )
     if (conflict.rows.length > 0) {
+      await client.query('ROLLBACK')
       return res.status(409).json({ error: 'Ese horario ya está ocupado' })
     }
 
-    const result = await db.query(
+    const result = await client.query(
       `INSERT INTO appointments
          (business_id, service_id, starts_at, ends_at, client_name, client_phone, staff_notes, price, status)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'confirmed')
        RETURNING *`,
       [businessId, serviceId, startsAt, endsAt.toISOString(), clientName, clientPhone || null, staffNotes || null, price]
     )
+    await client.query('COMMIT')
     res.status(201).json({ appointment: result.rows[0] })
   } catch (err) {
+    await client.query('ROLLBACK').catch(() => {})
     console.error('create appointment error:', err)
     res.status(500).json({ error: 'Error al crear cita' })
+  } finally {
+    client.release()
   }
 }
 
@@ -132,7 +146,8 @@ exports.availability = async (req, res) => {
     if (biz.rows.length === 0) {
       return res.status(404).json({ error: 'Negocio no encontrado' })
     }
-    const { id: businessId } = biz.rows[0]
+    const { id: businessId, timezone } = biz.rows[0]
+    const tz = timezone || 'America/Mexico_City'
 
     // Duración del servicio
     const svc = await db.query(
@@ -160,8 +175,8 @@ exports.availability = async (req, res) => {
       `SELECT starts_at, ends_at FROM appointments
        WHERE business_id = $1
          AND status NOT IN ('cancelled')
-         AND DATE(starts_at AT TIME ZONE 'America/Mexico_City') = $2`,
-      [businessId, date]
+         AND DATE(starts_at AT TIME ZONE $3) = $2`,
+      [businessId, date, tz]
     )
 
     // Generar todos los slots cada 30 min
@@ -209,72 +224,81 @@ exports.book = async (req, res) => {
     return res.status(400).json({ error: 'Datos incompletos' })
   }
 
+  const waService = require('../services/whatsappService')
+  const normalizedPhone = waService.normalizePhone(clientPhone)
+
+  const txn = await db.pool.connect()
   try {
-    const biz = await db.query(
-      'SELECT id FROM businesses WHERE slug = $1 AND is_active = true',
+    await txn.query('BEGIN')
+
+    const biz = await txn.query(
+      'SELECT id, name FROM businesses WHERE slug = $1 AND is_active = true',
       [slug]
     )
     if (biz.rows.length === 0) {
+      await txn.query('ROLLBACK')
       return res.status(404).json({ error: 'Negocio no encontrado' })
     }
     const businessId = biz.rows[0].id
 
-    const svc = await db.query(
+    const svc = await txn.query(
       'SELECT id, name, duration_min, price FROM services WHERE id = $1 AND business_id = $2 AND is_active = true',
       [serviceId, businessId]
     )
     if (svc.rows.length === 0) {
+      await txn.query('ROLLBACK')
       return res.status(404).json({ error: 'Servicio no encontrado' })
     }
     const service = svc.rows[0]
     const endsAt = new Date(new Date(startsAt).getTime() + service.duration_min * 60000)
 
-    // Verificar disponibilidad
-    const conflict = await db.query(
+    // Verificar disponibilidad con lock
+    const conflict = await txn.query(
       `SELECT id FROM appointments
        WHERE business_id = $1
          AND status NOT IN ('cancelled')
-         AND tsrange(starts_at, ends_at) && tsrange($2::timestamptz, $3::timestamptz)`,
+         AND tsrange(starts_at, ends_at) && tsrange($2::timestamptz, $3::timestamptz)
+       FOR UPDATE`,
       [businessId, startsAt, endsAt.toISOString()]
     )
     if (conflict.rows.length > 0) {
+      await txn.query('ROLLBACK')
       return res.status(409).json({ error: 'Ese horario ya no está disponible, elige otro' })
     }
 
     // Crear o encontrar cliente
-    let client = await db.query(
+    let client = await txn.query(
       'SELECT id FROM clients WHERE business_id = $1 AND phone = $2',
-      [businessId, clientPhone]
+      [businessId, normalizedPhone]
     )
     if (client.rows.length === 0) {
-      client = await db.query(
+      client = await txn.query(
         'INSERT INTO clients (business_id, name, phone) VALUES ($1,$2,$3) RETURNING id',
-        [businessId, clientName, clientPhone]
+        [businessId, clientName, normalizedPhone]
       )
     }
 
     // Crear la cita
-    const appt = await db.query(
+    const appt = await txn.query(
       `INSERT INTO appointments
          (business_id, service_id, client_id, starts_at, ends_at,
           client_name, client_phone, client_notes, price, status)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending')
        RETURNING id, starts_at, ends_at, status`,
       [businessId, serviceId, client.rows[0].id, startsAt, endsAt.toISOString(),
-       clientName, clientPhone, clientNotes || null, service.price]
+       clientName, normalizedPhone, clientNotes || null, service.price]
     )
+    await txn.query('COMMIT')
 
-    // ─── Disparar WhatsApp automático ────────────────────────────
-    const waService = require('../services/whatsappService')
-    // Confirmación al cliente
+    // WhatsApp (fire-and-forget, fuera del txn)
     waService.sendConfirmation({
-      clientPhone: clientPhone, clientName, businessName: biz.rows[0].name,
+      clientPhone: normalizedPhone, clientName, businessName: biz.rows[0].name,
       serviceName: service.name, startsAt, price: service.price, slug,
     }).catch(e => console.error('WA client error:', e))
-    // Notificación al dueño
+
     db.query('SELECT phone FROM users WHERE business_id = $1 AND role = $2', [businessId, 'owner'])
       .then(r => r.rows[0]?.phone && waService.notifyOwner({
-        ownerPhone: r.rows[0].phone, clientName, clientPhone,
+        ownerPhone: r.rows[0].phone, clientName, clientPhone: normalizedPhone,
         serviceName: service.name, startsAt,
       })).catch(e => console.error('WA owner error:', e))
 
@@ -290,7 +314,10 @@ exports.book = async (req, res) => {
       message: '¡Cita agendada! Recibirás confirmación por WhatsApp.',
     })
   } catch (err) {
+    await txn.query('ROLLBACK').catch(() => {})
     console.error('book error:', err)
     res.status(500).json({ error: 'Error al agendar cita' })
+  } finally {
+    txn.release()
   }
 }
