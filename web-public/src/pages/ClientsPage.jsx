@@ -48,6 +48,21 @@ const statusConfig = {
   cancelled: { label: 'Cancelada',  color: '#FF5C3A', bg: 'rgba(255,92,58,0.1)' },
 }
 
+const eventTypeConfig = {
+  booked:       { label: 'Cita agendada',       icon: '\uD83D\uDCC5', color: '#00E5A0' },
+  confirmed:    { label: 'Cita confirmada',      icon: '\u2705', color: '#00E5A0' },
+  cancelled:    { label: 'Cita cancelada',       icon: '\u274C', color: '#FF5C3A' },
+  completed:    { label: 'Cita completada',      icon: '\uD83C\uDF89', color: '#7070A0' },
+  no_show:      { label: 'No se present\u00f3',  icon: '\uD83D\uDC7B', color: '#FF9500' },
+  rescheduled:  { label: 'Cita reagendada',      icon: '\uD83D\uDD04', color: '#FF9500' },
+  reminder_24h: { label: 'Recordatorio 24h',     icon: '\u23F0', color: '#7070A0' },
+  reminder_1h:  { label: 'Recordatorio 1h',      icon: '\uD83D\uDD14', color: '#7070A0' },
+  followup:     { label: 'Follow-up enviado',    icon: '\u2B50', color: '#7070A0' },
+  note_updated: { label: 'Notas actualizadas',   icon: '\uD83D\uDCDD', color: '#7070A0' },
+}
+
+const channelLabels = { web: 'Web', whatsapp: 'WhatsApp', admin: 'Admin', system: 'Sistema' }
+
 const inputStyle = {
   width: '100%',
   background: 'rgba(255,255,255,0.06)',
@@ -92,6 +107,9 @@ export default function ClientsPage() {
   const [editForm, setEditForm] = useState({ name: '', phone: '', email: '', notes: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  const [events, setEvents] = useState([])
+  const [eventsLoading, setEventsLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState('timeline')
   const debounceRef = useRef(null)
 
   const fetchClients = useCallback((query = '') => {
@@ -138,6 +156,14 @@ export default function ClientsPage() {
       .finally(() => setDetailLoading(false))
   }
 
+  const fetchEvents = (clientId) => {
+    setEventsLoading(true)
+    apiFetch(`/api/clients/${clientId}/events`)
+      .then(data => setEvents(data.events || []))
+      .catch(() => setEvents([]))
+      .finally(() => setEventsLoading(false))
+  }
+
   const handleSelectClient = (client) => {
     if (selectedId === client.id) {
       setSelectedId(null)
@@ -147,6 +173,8 @@ export default function ClientsPage() {
     }
     setSelectedId(client.id)
     fetchDetail(client.id)
+    fetchEvents(client.id)
+    setActiveTab('timeline')
   }
 
   const handleSave = () => {
@@ -450,17 +478,6 @@ export default function ClientsPage() {
                             style={inputStyle}
                           />
                         </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: 12, color: '#7070A0', marginBottom: 6, fontFamily: 'DM Sans, sans-serif' }}>
-                            Notas
-                          </label>
-                          <textarea
-                            value={editForm.notes}
-                            onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
-                            rows={3}
-                            style={{ ...inputStyle, resize: 'vertical' }}
-                          />
-                        </div>
                         <button
                           onClick={handleSave}
                           disabled={saving}
@@ -509,76 +526,170 @@ export default function ClientsPage() {
                     )}
                   </div>
 
-                  {/* Appointment history */}
-                  <div style={{ padding: '20px 24px' }}>
-                    <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: 15, fontWeight: 700, color: '#F0F0FF', marginBottom: 14 }}>
-                      Historial de citas
-                    </h3>
-                    {appointments.length === 0 ? (
-                      <p style={{ fontSize: 13, color: '#7070A0', fontFamily: 'DM Sans, sans-serif' }}>
-                        Sin citas registradas
-                      </p>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        {appointments.map((appt) => {
-                          const st = statusConfig[appt.status] || statusConfig.pending
-                          return (
-                            <div
-                              key={appt.id}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 12,
-                                padding: '10px 14px',
-                                borderRadius: 10,
-                                background: 'rgba(255,255,255,0.02)',
-                                border: '1px solid rgba(255,255,255,0.04)',
-                              }}
-                            >
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <p style={{
-                                  fontSize: 13,
-                                  fontWeight: 600,
-                                  color: '#F0F0FF',
-                                  fontFamily: 'DM Sans, sans-serif',
-                                  marginBottom: 2,
-                                }}>
-                                  {appt.service_name || 'Sin servicio'}
-                                </p>
-                                <p style={{ fontSize: 12, color: '#7070A0', fontFamily: 'DM Sans, sans-serif' }}>
-                                  {formatDateTime(appt.starts_at)}
-                                </p>
-                              </div>
-                              <div style={{
-                                padding: '3px 8px',
-                                borderRadius: 6,
-                                fontSize: 11,
-                                fontWeight: 600,
-                                background: st.bg,
-                                color: st.color,
-                                fontFamily: 'DM Sans, sans-serif',
-                                whiteSpace: 'nowrap',
-                              }}>
-                                {st.label}
-                              </div>
-                              {appt.price != null && (
-                                <span style={{
-                                  fontFamily: 'Syne, sans-serif',
-                                  fontSize: 14,
-                                  fontWeight: 700,
-                                  color: '#F0F0FF',
-                                  minWidth: 56,
-                                  textAlign: 'right',
-                                }}>
-                                  ${appt.price}
-                                </span>
-                              )}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
+                  {/* Tabs */}
+                  <div style={{
+                    display: 'flex', gap: 0,
+                    borderBottom: '1px solid rgba(255,255,255,0.06)',
+                    padding: '0 24px',
+                  }}>
+                    {[
+                      { id: 'timeline', label: 'Timeline' },
+                      { id: 'history', label: 'Historial' },
+                      { id: 'notes', label: 'Notas' },
+                    ].map(tab => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        style={{
+                          padding: '12px 16px',
+                          background: 'none',
+                          border: 'none',
+                          borderBottom: activeTab === tab.id ? '2px solid #FF5C3A' : '2px solid transparent',
+                          color: activeTab === tab.id ? '#F0F0FF' : '#7070A0',
+                          fontFamily: 'Syne, sans-serif',
+                          fontSize: 13,
+                          fontWeight: activeTab === tab.id ? 700 : 500,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
                   </div>
+
+                  {/* Timeline tab */}
+                  {activeTab === 'timeline' && (
+                    <div style={{ padding: '20px 24px' }}>
+                      {eventsLoading ? (
+                        <p style={{ fontSize: 13, color: '#7070A0', fontFamily: 'DM Sans, sans-serif' }}>Cargando actividad...</p>
+                      ) : events.length === 0 ? (
+                        <p style={{ fontSize: 13, color: '#7070A0', fontFamily: 'DM Sans, sans-serif' }}>Sin actividad registrada</p>
+                      ) : (
+                        <div style={{ position: 'relative', paddingLeft: 24 }}>
+                          <div style={{
+                            position: 'absolute', left: 7, top: 4, bottom: 4,
+                            width: 2, background: 'rgba(255,255,255,0.06)',
+                          }} />
+                          {events.map((ev) => {
+                            const config = eventTypeConfig[ev.event_type] || { label: ev.event_type, icon: '\u2022', color: '#7070A0' }
+                            return (
+                              <div key={ev.id} style={{ position: 'relative', marginBottom: 16 }}>
+                                <div style={{
+                                  position: 'absolute', left: -20, top: 4,
+                                  width: 12, height: 12, borderRadius: '50%',
+                                  background: config.color, border: '2px solid #13131A',
+                                }} />
+                                <div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                                    <span style={{ fontSize: 13 }}>{config.icon}</span>
+                                    <span style={{ fontSize: 13, fontWeight: 600, color: '#F0F0FF', fontFamily: 'DM Sans, sans-serif' }}>
+                                      {config.label}
+                                    </span>
+                                    {ev.channel && (
+                                      <span style={{
+                                        fontSize: 10, padding: '1px 6px', borderRadius: 4,
+                                        background: 'rgba(255,255,255,0.06)', color: '#7070A0',
+                                        fontFamily: 'DM Sans, sans-serif',
+                                      }}>
+                                        {channelLabels[ev.channel] || ev.channel}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {ev.service_name && (
+                                    <p style={{ fontSize: 12, color: '#7070A0', fontFamily: 'DM Sans, sans-serif', marginBottom: 1 }}>
+                                      {ev.service_name}
+                                    </p>
+                                  )}
+                                  <p style={{ fontSize: 11, color: '#50507A', fontFamily: 'DM Sans, sans-serif' }}>
+                                    {formatDateTime(ev.created_at)}
+                                  </p>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* History tab */}
+                  {activeTab === 'history' && (
+                    <div style={{ padding: '20px 24px' }}>
+                      {appointments.length === 0 ? (
+                        <p style={{ fontSize: 13, color: '#7070A0', fontFamily: 'DM Sans, sans-serif' }}>Sin citas registradas</p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {appointments.map((appt) => {
+                            const st = statusConfig[appt.status] || statusConfig.pending
+                            return (
+                              <div key={appt.id} style={{
+                                display: 'flex', alignItems: 'center', gap: 12,
+                                padding: '10px 14px', borderRadius: 10,
+                                background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)',
+                              }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <p style={{ fontSize: 13, fontWeight: 600, color: '#F0F0FF', fontFamily: 'DM Sans, sans-serif', marginBottom: 2 }}>
+                                    {appt.service_name || 'Sin servicio'}
+                                  </p>
+                                  <p style={{ fontSize: 12, color: '#7070A0', fontFamily: 'DM Sans, sans-serif' }}>
+                                    {formatDateTime(appt.starts_at)}
+                                  </p>
+                                </div>
+                                <div style={{
+                                  padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                                  background: st.bg, color: st.color, fontFamily: 'DM Sans, sans-serif', whiteSpace: 'nowrap',
+                                }}>
+                                  {st.label}
+                                </div>
+                                {appt.price != null && (
+                                  <span style={{ fontFamily: 'Syne, sans-serif', fontSize: 14, fontWeight: 700, color: '#F0F0FF', minWidth: 56, textAlign: 'right' }}>
+                                    ${appt.price}
+                                  </span>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Notes tab */}
+                  {activeTab === 'notes' && (
+                    <div style={{ padding: '20px 24px' }}>
+                      <textarea
+                        value={editForm.notes}
+                        onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                        placeholder="Agregar notas sobre este cliente..."
+                        rows={8}
+                        style={{ ...inputStyle, resize: 'vertical', minHeight: 120, lineHeight: 1.6 }}
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+                        <button
+                          onClick={() => {
+                            apiFetch(`/api/clients/${selectedId}`, {
+                              method: 'PUT',
+                              body: JSON.stringify({ notes: editForm.notes }),
+                            })
+                              .then(() => {
+                                fetchDetail(selectedId)
+                                fetchEvents(selectedId)
+                              })
+                              .catch(err => alert(err.message || 'Error al guardar'))
+                          }}
+                          style={{
+                            padding: '8px 16px', borderRadius: 8, border: 'none',
+                            background: 'linear-gradient(135deg, #FF5C3A, #FF7A52)',
+                            color: 'white', cursor: 'pointer', fontSize: 13,
+                            fontWeight: 600, fontFamily: 'DM Sans, sans-serif',
+                          }}
+                        >
+                          Guardar notas
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>

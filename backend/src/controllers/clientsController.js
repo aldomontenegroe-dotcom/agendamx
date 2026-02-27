@@ -1,4 +1,5 @@
 const db = require('../config/db')
+const { logEvent } = require('../services/clientEvents')
 
 // GET /api/clients (auth required)
 exports.list = async (req, res) => {
@@ -62,9 +63,36 @@ exports.update = async (req, res) => {
       [name, phone, email, notes, id, businessId]
     )
     if (!result.rows.length) return res.status(404).json({ error: 'Cliente no encontrado' })
+    if (notes !== undefined && notes !== null) {
+      logEvent({ businessId, clientId: id, eventType: 'note_updated', description: 'Notas del cliente actualizadas', channel: 'admin' })
+    }
     res.json({ client: result.rows[0] })
   } catch (err) {
     console.error('update client error:', err)
     res.status(500).json({ error: 'Error al actualizar cliente' })
+  }
+}
+
+// GET /api/clients/:id/events (auth required)
+exports.getEvents = async (req, res) => {
+  const { businessId } = req.user
+  const { id } = req.params
+  const { limit } = req.query
+  try {
+    const result = await db.query(
+      `SELECT ce.id, ce.event_type, ce.description, ce.channel, ce.created_at,
+              a.starts_at as appointment_date, s.name as service_name
+       FROM client_events ce
+       LEFT JOIN appointments a ON a.id = ce.appointment_id
+       LEFT JOIN services s ON s.id = a.service_id
+       WHERE ce.client_id = $1 AND ce.business_id = $2
+       ORDER BY ce.created_at DESC
+       LIMIT $3`,
+      [id, businessId, parseInt(limit) || 50]
+    )
+    res.json({ events: result.rows })
+  } catch (err) {
+    console.error('getEvents error:', err)
+    res.status(500).json({ error: 'Error al obtener eventos' })
   }
 }

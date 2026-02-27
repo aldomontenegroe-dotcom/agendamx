@@ -15,6 +15,7 @@ require('dotenv').config({ path: require('path').join(__dirname, '../../.env') }
 const db = require('../config/db')
 const wa = require('../services/whatsappService')
 const email = require('../services/emailService')
+const { logEvent } = require('../services/clientEvents')
 
 const log = (msg) => console.log(`[${new Date().toISOString()}] 📲 ${msg}`)
 
@@ -25,6 +26,7 @@ async function runReminders() {
     // ─── 1. Recordatorios 24 horas ────────────────────────────────
     const r24 = await db.query(`
       SELECT a.id, a.starts_at, a.client_name, a.client_phone,
+             a.client_id, a.business_id,
              s.name as service_name,
              b.name as business_name,
              c.email as client_email
@@ -53,6 +55,7 @@ async function runReminders() {
           [appt.id]
         )
         log(`✅ 24h enviado a ${appt.client_name}`)
+        if (appt.client_id) logEvent({ businessId: appt.business_id, clientId: appt.client_id, appointmentId: appt.id, eventType: 'reminder_24h', description: 'Recordatorio 24h enviado', channel: 'system' })
       } else {
         log(`❌ Error 24h para ${appt.client_name}: ${JSON.stringify(result.error)}`)
       }
@@ -69,6 +72,7 @@ async function runReminders() {
     // ─── 2. Recordatorios 1 hora ──────────────────────────────────
     const r1h = await db.query(`
       SELECT a.id, a.starts_at, a.client_name, a.client_phone,
+             a.client_id, a.business_id,
              s.name as service_name,
              b.name as business_name,
              c.email as client_email
@@ -97,6 +101,7 @@ async function runReminders() {
           [appt.id]
         )
         log(`✅ 1h enviado a ${appt.client_name}`)
+        if (appt.client_id) logEvent({ businessId: appt.business_id, clientId: appt.client_id, appointmentId: appt.id, eventType: 'reminder_1h', description: 'Recordatorio 1h enviado', channel: 'system' })
       } else {
         log(`❌ Error 1h para ${appt.client_name}: ${JSON.stringify(result.error)}`)
       }
@@ -112,6 +117,7 @@ async function runReminders() {
     // ─── 3. Seguimiento post-cita (2 horas después) ───────────────
     const followups = await db.query(`
       SELECT a.id, a.client_name, a.client_phone,
+             a.client_id, a.business_id,
              b.name as business_name, b.slug,
              c.email as client_email
       FROM appointments a
@@ -137,6 +143,7 @@ async function runReminders() {
           [appt.id]
         )
         log(`✅ Follow-up enviado a ${appt.client_name}`)
+        if (appt.client_id) logEvent({ businessId: appt.business_id, clientId: appt.client_id, appointmentId: appt.id, eventType: 'followup', description: 'Follow-up enviado', channel: 'system' })
       }
 
       if (appt.client_email) {

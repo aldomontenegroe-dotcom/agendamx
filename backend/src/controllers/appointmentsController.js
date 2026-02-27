@@ -1,5 +1,6 @@
 const db = require('../config/db')
 const emailService = require('../services/emailService')
+const { logEvent } = require('../services/clientEvents')
 
 // ─── Listar citas del negocio ─────────────────────────────────────
 exports.list = async (req, res) => {
@@ -120,6 +121,11 @@ exports.create = async (req, res) => {
     )
     await client.query('COMMIT')
 
+    // Log event
+    if (clientRecord?.rows[0]?.id) {
+      logEvent({ businessId, clientId: clientRecord.rows[0].id, appointmentId: result.rows[0].id, eventType: 'booked', description: 'Cita agendada por admin', channel: 'admin' })
+    }
+
     // Look up staff name for notifications
     let staffName = null
     if (staffId) {
@@ -171,7 +177,12 @@ exports.updateStatus = async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Cita no encontrada' })
     }
-    res.json({ appointment: result.rows[0] })
+    const appt = result.rows[0]
+    if (appt.client_id) {
+      const labels = { confirmed: 'confirmada', completed: 'completada', cancelled: 'cancelada', no_show: 'no show' }
+      logEvent({ businessId, clientId: appt.client_id, appointmentId: appt.id, eventType: status, description: `Cita ${labels[status] || status} por admin`, channel: 'admin' })
+    }
+    res.json({ appointment: appt })
   } catch (err) {
     console.error('updateStatus error:', err)
     res.status(500).json({ error: 'Error al actualizar cita' })
@@ -436,6 +447,9 @@ exports.book = async (req, res) => {
        clientName, normalizedPhone, clientNotes || null, service.price]
     )
     await txn.query('COMMIT')
+
+    // Log event
+    logEvent({ businessId, clientId: client.rows[0].id, appointmentId: appt.rows[0].id, eventType: 'booked', description: `Cita agendada via web: ${service.name}`, channel: 'web' })
 
     // WhatsApp (fire-and-forget, fuera del txn)
     waService.sendConfirmation({

@@ -1,5 +1,6 @@
 const db = require('../config/db')
 const wa = require('./whatsappService')
+const { logEvent } = require('./clientEvents')
 
 // ─── Conversation State (in-memory, 30-min TTL) ─────────────────
 const conversations = new Map()
@@ -354,6 +355,10 @@ async function handleHuman(phone, biz, contactName) {
 async function handleConfirm(phone, pendingAppt, biz) {
   if (!pendingAppt) return wa.sendText(phone, 'No tienes citas pendientes por confirmar.')
   await db.query("UPDATE appointments SET status = 'confirmed' WHERE id = $1", [pendingAppt.id])
+  const apptData = await db.query('SELECT client_id, business_id FROM appointments WHERE id = $1', [pendingAppt.id])
+  if (apptData.rows[0]?.client_id) {
+    logEvent({ businessId: apptData.rows[0].business_id, clientId: apptData.rows[0].client_id, appointmentId: pendingAppt.id, eventType: 'confirmed', description: 'Cita confirmada via WhatsApp', channel: 'whatsapp' })
+  }
   const d = new Date(pendingAppt.starts_at)
   return wa.sendText(phone,
     `✅ *¡Cita confirmada!*\n\n` +
@@ -366,6 +371,10 @@ async function handleConfirm(phone, pendingAppt, biz) {
 async function handleCancel(phone, pendingAppt) {
   if (!pendingAppt) return wa.sendText(phone, 'No tienes citas pendientes para cancelar.')
   await db.query("UPDATE appointments SET status = 'cancelled' WHERE id = $1", [pendingAppt.id])
+  const apptData = await db.query('SELECT client_id, business_id FROM appointments WHERE id = $1', [pendingAppt.id])
+  if (apptData.rows[0]?.client_id) {
+    logEvent({ businessId: apptData.rows[0].business_id, clientId: apptData.rows[0].client_id, appointmentId: pendingAppt.id, eventType: 'cancelled', description: 'Cita cancelada via WhatsApp', channel: 'whatsapp' })
+  }
   return wa.sendText(phone,
     `😔 Entendido, tu cita ha sido cancelada.\n\n` +
     `Cuando quieras reagendar, escribe *CITA*. ¡Hasta pronto!`
@@ -375,6 +384,10 @@ async function handleCancel(phone, pendingAppt) {
 async function handleReschedule(phone, pendingAppt, biz) {
   if (pendingAppt) {
     await db.query("UPDATE appointments SET status = 'cancelled' WHERE id = $1", [pendingAppt.id])
+    const apptData = await db.query('SELECT client_id, business_id FROM appointments WHERE id = $1', [pendingAppt.id])
+    if (apptData.rows[0]?.client_id) {
+      logEvent({ businessId: apptData.rows[0].business_id, clientId: apptData.rows[0].client_id, appointmentId: pendingAppt.id, eventType: 'rescheduled', description: 'Cita reagendada via WhatsApp', channel: 'whatsapp' })
+    }
   }
   return wa.sendText(phone,
     `📅 Para reagendar, usa este link:\n\n` +
@@ -718,7 +731,7 @@ async function handleBookingStep(phone, text, state, contactName) {
         // Check availability with lock (staff-aware)
         let conflictQuery = `SELECT id FROM appointments
            WHERE business_id = $1 AND status NOT IN ('cancelled')
-             AND tsrange(starts_at, ends_at) && tsrange($2::timestamptz, $3::timestamptz)`
+             AND tstzrange(starts_at, ends_at) && tstzrange($2::timestamptz, $3::timestamptz)`
         const conflictParams = [state.businessId, state.startsAt, endsAt.toISOString()]
         if (state.staffId) {
           conflictQuery += ` AND staff_id = $4`
@@ -745,16 +758,20 @@ async function handleBookingStep(phone, text, state, contactName) {
         }
 
         // Create appointment
-        await txn.query(
+        const apptResult = await txn.query(
           `INSERT INTO appointments
              (business_id, service_id, client_id, staff_id, starts_at, ends_at,
               client_name, client_phone, price, status)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending')`,
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending')
+           RETURNING id`,
           [state.businessId, state.serviceId, client.rows[0].id, state.staffId || null,
            state.startsAt, endsAt.toISOString(),
            state.clientName, phone, service.price]
         )
         await txn.query('COMMIT')
+
+        // Log event
+        logEvent({ businessId: state.businessId, clientId: client.rows[0].id, appointmentId: apptResult.rows[0].id, eventType: 'booked', description: `Cita agendada via WhatsApp: ${service.name}`, channel: 'whatsapp' })
 
         clearState(phone)
 

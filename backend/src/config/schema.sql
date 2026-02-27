@@ -132,6 +132,20 @@ CREATE TABLE blocked_times (
   created_at    TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- ─── EVENTOS DE CLIENTE ─────────────────────────────────────────
+CREATE TABLE client_events (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  business_id   UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  client_id     UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+  appointment_id UUID REFERENCES appointments(id) ON DELETE SET NULL,
+  event_type    VARCHAR(50) NOT NULL,
+  -- booked | confirmed | cancelled | completed | no_show | rescheduled
+  -- reminder_24h | reminder_1h | followup | note_updated
+  description   TEXT,
+  channel       VARCHAR(20),  -- web | whatsapp | admin | system
+  created_at    TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ─── ÍNDICES ─────────────────────────────────────────────────────
 CREATE INDEX idx_appointments_business_date ON appointments(business_id, starts_at);
 CREATE INDEX idx_appointments_client ON appointments(client_id);
@@ -139,3 +153,4 @@ CREATE INDEX idx_appointments_status ON appointments(business_id, status);
 CREATE INDEX idx_services_business ON services(business_id, is_active);
 CREATE INDEX idx_clients_business ON clients(business_id);
 CREATE INDEX idx_businesses_slug ON businesses(slug);
+CREATE INDEX idx_client_events_client ON client_events(client_id, created_at DESC);
