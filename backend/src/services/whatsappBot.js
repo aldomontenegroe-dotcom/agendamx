@@ -70,6 +70,7 @@ function greetWord(tone) {
 // ─── Day names ───────────────────────────────────────────────────
 const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 const EMOJIS_NUM = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟']
+const MX_OFFSET = '-06:00' // Mexico City UTC offset (no DST since 2022)
 
 // ─── Resolve business from slug ──────────────────────────────────
 async function resolveBusinessBySlug(slug) {
@@ -467,11 +468,12 @@ async function sendDateSelection(phone, state) {
   for (const h of hours.rows) hoursMap[h.day_of_week] = h
 
   const dates = []
-  const today = new Date()
+  // Use Mexico City date to avoid UTC midnight edge cases
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
+  const todayBase = new Date(todayStr + 'T12:00:00Z') // Noon UTC avoids day boundary issues
   for (let i = 0; dates.length < 5 && i < 14; i++) {
-    const d = new Date(today)
-    d.setDate(d.getDate() + i)
-    const dow = d.getDay()
+    const d = new Date(todayBase.getTime() + i * 86400000)
+    const dow = d.getUTCDay()
     if (hoursMap[dow] && hoursMap[dow].is_open) {
       dates.push({
         date: d.toISOString().split('T')[0],
@@ -590,8 +592,8 @@ async function handleBookingStep(phone, text, state, contactName) {
       const closeMin = ch * 60 + cm
       const duration = state.serviceDuration
 
-      // Get existing appointments (filter by staff if selected)
-      let existingQuery = `SELECT starts_at, ends_at FROM appointments
+      // Get existing appointments (include staff_id for multi-staff availability)
+      let existingQuery = `SELECT starts_at, ends_at, staff_id FROM appointments
          WHERE business_id = $1 AND status NOT IN ('cancelled')
            AND DATE(starts_at AT TIME ZONE 'America/Mexico_City') = $2`
       const existingParams = [state.businessId, selectedDate.date]
@@ -603,23 +605,37 @@ async function handleBookingStep(phone, text, state, contactName) {
 
       const slots = []
       const now = new Date()
+      const multiStaff = !state.staffId && state.staffMembers && state.staffMembers.length > 1
       for (let m = openMin; m + duration <= closeMin; m += 30) {
         const h = Math.floor(m / 60)
         const min = m % 60
         const timeStr = `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`
-        const slotStart = new Date(`${selectedDate.date}T${timeStr}:00`)
+        const slotStart = new Date(`${selectedDate.date}T${timeStr}:00${MX_OFFSET}`)
         const slotEnd = new Date(slotStart.getTime() + duration * 60000)
 
         // Skip past slots
         if (slotStart <= now) continue
 
-        // Check conflicts
-        const busy = existing.rows.some(a => {
-          const aStart = new Date(a.starts_at)
-          const aEnd = new Date(a.ends_at)
-          return slotStart < aEnd && slotEnd > aStart
-        })
-        if (!busy) slots.push(timeStr)
+        if (multiStaff) {
+          // "Any available": slot is open if at least one staff member is free
+          const hasAvailable = state.staffMembers.some(staff => {
+            return !existing.rows.some(a => {
+              if (a.staff_id !== staff.id) return false
+              const aStart = new Date(a.starts_at)
+              const aEnd = new Date(a.ends_at)
+              return slotStart < aEnd && slotEnd > aStart
+            })
+          })
+          if (hasAvailable) slots.push(timeStr)
+        } else {
+          // Specific staff or single staff
+          const busy = existing.rows.some(a => {
+            const aStart = new Date(a.starts_at)
+            const aEnd = new Date(a.ends_at)
+            return slotStart < aEnd && slotEnd > aStart
+          })
+          if (!busy) slots.push(timeStr)
+        }
       }
 
       if (!slots.length) {
@@ -656,7 +672,7 @@ async function handleBookingStep(phone, text, state, contactName) {
 
       // If we know the client name, skip to confirm
       if (state.clientName) {
-        const startsAt = `${state.date}T${selectedTime}:00`
+        const startsAt = `${state.date}T${selectedTime}:00${MX_OFFSET}`
         const d = new Date(startsAt)
         const dateStr = d.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Mexico_City' })
 
@@ -683,7 +699,7 @@ async function handleBookingStep(phone, text, state, contactName) {
       const name = text.trim()
       if (name.length < 2) return wa.sendText(phone, 'Por favor escribe tu nombre completo.')
 
-      const startsAt = `${state.date}T${state.time}:00`
+      const startsAt = `${state.date}T${state.time}:00${MX_OFFSET}`
       const d = new Date(startsAt)
       const dateStr = d.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Mexico_City' })
 
@@ -728,21 +744,45 @@ async function handleBookingStep(phone, text, state, contactName) {
         const service = svc.rows[0]
         const endsAt = new Date(new Date(state.startsAt).getTime() + service.duration_min * 60000)
 
-        // Check availability with lock (staff-aware)
-        let conflictQuery = `SELECT id FROM appointments
-           WHERE business_id = $1 AND status NOT IN ('cancelled')
-             AND tstzrange(starts_at, ends_at) && tstzrange($2::timestamptz, $3::timestamptz)`
-        const conflictParams = [state.businessId, state.startsAt, endsAt.toISOString()]
-        if (state.staffId) {
-          conflictQuery += ` AND staff_id = $4`
-          conflictParams.push(state.staffId)
-        }
-        conflictQuery += ` FOR UPDATE`
-        const conflict = await txn.query(conflictQuery, conflictParams)
-        if (conflict.rows.length) {
-          await txn.query('ROLLBACK')
-          clearState(phone)
-          return wa.sendText(phone, '😕 Ese horario ya fue tomado. Escribe *CITA* para elegir otro.')
+        // Check availability with lock + auto-assign staff if "any available"
+        let assignedStaffId = state.staffId
+        let assignedStaffName = state.staffName
+
+        if (!assignedStaffId && state.staffMembers && state.staffMembers.length > 0) {
+          // "Any available": find the first free staff member
+          const busyStaff = await txn.query(
+            `SELECT DISTINCT staff_id FROM appointments
+             WHERE business_id = $1 AND status NOT IN ('cancelled')
+               AND tstzrange(starts_at, ends_at) && tstzrange($2::timestamptz, $3::timestamptz)
+             FOR UPDATE`,
+            [state.businessId, state.startsAt, endsAt.toISOString()]
+          )
+          const busyIds = new Set(busyStaff.rows.map(r => r.staff_id))
+          const freeStaff = state.staffMembers.find(s => !busyIds.has(s.id))
+          if (!freeStaff) {
+            await txn.query('ROLLBACK')
+            clearState(phone)
+            return wa.sendText(phone, '😕 Ese horario ya fue tomado. Escribe *CITA* para elegir otro.')
+          }
+          assignedStaffId = freeStaff.id
+          assignedStaffName = freeStaff.name
+        } else {
+          // Specific staff selected: check conflict directly
+          let conflictQuery = `SELECT id FROM appointments
+             WHERE business_id = $1 AND status NOT IN ('cancelled')
+               AND tstzrange(starts_at, ends_at) && tstzrange($2::timestamptz, $3::timestamptz)`
+          const conflictParams = [state.businessId, state.startsAt, endsAt.toISOString()]
+          if (assignedStaffId) {
+            conflictQuery += ` AND staff_id = $4`
+            conflictParams.push(assignedStaffId)
+          }
+          conflictQuery += ` FOR UPDATE`
+          const conflict = await txn.query(conflictQuery, conflictParams)
+          if (conflict.rows.length) {
+            await txn.query('ROLLBACK')
+            clearState(phone)
+            return wa.sendText(phone, '😕 Ese horario ya fue tomado. Escribe *CITA* para elegir otro.')
+          }
         }
 
         // Create or find client
@@ -764,7 +804,7 @@ async function handleBookingStep(phone, text, state, contactName) {
               client_name, client_phone, price, status)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending')
            RETURNING id`,
-          [state.businessId, state.serviceId, client.rows[0].id, state.staffId || null,
+          [state.businessId, state.serviceId, client.rows[0].id, assignedStaffId || null,
            state.startsAt, endsAt.toISOString(),
            state.clientName, phone, service.price]
         )
@@ -779,6 +819,7 @@ async function handleBookingStep(phone, text, state, contactName) {
         wa.sendConfirmation({
           clientPhone: phone, clientName: state.clientName, businessName: state.businessName,
           serviceName: service.name, startsAt: state.startsAt, price: service.price, slug: state.slug,
+          staffName: assignedStaffName,
         }).catch(e => console.error('WA confirm error:', e))
 
         // Notify owner
