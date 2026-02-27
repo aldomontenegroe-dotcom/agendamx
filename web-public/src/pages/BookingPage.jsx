@@ -31,8 +31,8 @@ const IconBack   = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="n
 
 // ─── Componentes de pasos ─────────────────────────────────────────
 
-function StepIndicator({ step }) {
-  const steps = ['Servicio','Fecha','Datos','¡Listo!']
+function StepIndicator({ step, steps: customSteps }) {
+  const steps = customSteps || ['Servicio','Fecha','Datos','¡Listo!']
   return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:0, marginBottom:32 }}>
       {steps.map((s, i) => (
@@ -136,7 +136,7 @@ function Step1Services({ services, selected, onSelect, onNext }) {
   )
 }
 
-function Step2DateTime({ slug, service, onNext, onBack }) {
+function Step2DateTime({ slug, service, staffId, onNext, onBack }) {
   const days = getNext7Days()
   const [selDay, setSelDay] = useState(null)
   const [selTime, setSelTime] = useState(null)
@@ -148,7 +148,9 @@ function Step2DateTime({ slug, service, onNext, onBack }) {
     setSelTime(null)
     setSlotsLoading(true)
     const dateStr = days[i].full.toISOString().split('T')[0]
-    fetch(`${API}/api/appointments/public/${slug}/availability?serviceId=${service.id}&date=${dateStr}`)
+    let availUrl = `${API}/api/appointments/public/${slug}/availability?serviceId=${service.id}&date=${dateStr}`
+    if (staffId) availUrl += `&staffId=${staffId}`
+    fetch(availUrl)
       .then(r => r.json())
       .then(data => setSlots(data.slots || []))
       .catch(() => setSlots([]))
@@ -261,6 +263,7 @@ function Step3Contact({ slug, booking, onNext, onBack }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           serviceId: booking.service.id,
+          staffId: booking.staffId || null,
           startsAt,
           clientName: form.name,
           clientPhone: form.phone,
@@ -300,6 +303,12 @@ function Step3Contact({ slug, booking, onNext, onBack }) {
           <span style={{ fontSize:13, color:'var(--muted)' }}>Servicio</span>
           <span style={{ fontSize:13, fontWeight:600 }}>{booking.service.name}</span>
         </div>
+        {booking.staffName && (
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
+            <span style={{ fontSize:13, color:'var(--muted)' }}>Con</span>
+            <span style={{ fontSize:13, fontWeight:600 }}>{booking.staffName}</span>
+          </div>
+        )}
         <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
           <span style={{ fontSize:13, color:'var(--muted)' }}>Fecha</span>
           <span style={{ fontSize:13, fontWeight:600 }}>{booking.dateTime.day?.date} · {booking.dateTime.time}</span>
@@ -429,15 +438,16 @@ function Step4Confirmation({ business, booking }) {
         {[
           { label:'Negocio',   val: business.name },
           { label:'Servicio',  val: booking.service.name },
+          ...(booking.staffName ? [{ label:'Con', val: booking.staffName }] : []),
           { label:'Fecha',     val: `${booking.dateTime.day?.date}` },
           { label:'Hora',      val: booking.dateTime.time },
           { label:'Duración',  val: `${booking.service.duration_min} min` },
           { label:'Total',     val: `$${booking.service.price} MXN`, accent:true },
-        ].map((r, i) => (
+        ].map((r, i, arr) => (
           <div key={i} style={{
             display:'flex', justifyContent:'space-between', alignItems:'center',
-            paddingBottom: i < 5 ? 10 : 0, marginBottom: i < 5 ? 10 : 0,
-            borderBottom: i < 5 ? '1px solid var(--border)' : 'none',
+            paddingBottom: i < arr.length - 1 ? 10 : 0, marginBottom: i < arr.length - 1 ? 10 : 0,
+            borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none',
           }}>
             <span style={{ fontSize:13, color:'var(--muted)' }}>{r.label}</span>
             <span style={{ fontSize:14, fontWeight:700, color: r.accent ? 'var(--primary)' : 'var(--text)', fontFamily: r.accent ? 'Syne, sans-serif' : 'inherit' }}>{r.val}</span>
@@ -469,11 +479,16 @@ export default function BookingPage({ slug }) {
   const [service, setService]   = useState(null)
   const [dateTime, setDateTime] = useState({})
   const [contact, setContact]   = useState({})
+  const [staffMembers, setStaffMembers] = useState([])
+  const [selectedStaff, setSelectedStaff] = useState(null) // null = "any available"
 
   const [business, setBusiness]     = useState(null)
   const [services, setServices]     = useState([])
   const [pageLoading, setPageLoading] = useState(true)
   const [pageError, setPageError]   = useState(null)
+
+  const hasMultiStaff = staffMembers.length > 1
+  const stepOffset = hasMultiStaff ? 1 : 0
 
   useEffect(() => {
     Promise.all([
@@ -484,11 +499,17 @@ export default function BookingPage({ slug }) {
       setServices(svcData.services)
     }).catch(() => setPageError('Negocio no encontrado'))
       .finally(() => setPageLoading(false))
+    // Fetch staff members (non-blocking, best effort)
+    fetch(`${API}/api/staff/public/${slug}`).then(r => r.json()).then(d => setStaffMembers(d.staff || [])).catch(() => {})
   }, [slug])
 
-  const handleStep1 = () => setStep(1)
-  const handleStep2 = (dt) => { setDateTime(dt); setStep(2) }
-  const handleStep3 = (c)  => { setContact(c);   setStep(3) }
+  const handleServiceNext = () => setStep(1)
+  const handleDateTimeNext = (dt) => { setDateTime(dt); setStep(1 + stepOffset + 1) }
+  const handleContactNext = (c)  => { setContact(c);   setStep(2 + stepOffset + 1) }
+
+  const stepLabels = hasMultiStaff
+    ? ['Servicio','Profesional','Fecha','Datos','¡Listo!']
+    : ['Servicio','Fecha','Datos','¡Listo!']
 
   if (pageLoading) return (
     <div style={{ minHeight:'100vh', background:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -599,16 +620,128 @@ export default function BookingPage({ slug }) {
           marginTop:-16, position:'relative',
           border:'1px solid var(--border)',
         }}>
-          <StepIndicator step={step} />
+          <StepIndicator step={step} steps={stepLabels} />
 
-          {step === 0 && <Step1Services services={services} selected={service} onSelect={setService} onNext={handleStep1} />}
-          {step === 1 && <Step2DateTime slug={slug} service={service} onNext={handleStep2} onBack={() => setStep(0)} />}
-          {step === 2 && <Step3Contact slug={slug} booking={{ service, dateTime }} onNext={handleStep3} onBack={() => setStep(1)} />}
-          {step === 3 && <Step4Confirmation business={business} booking={{ service, dateTime, contact }} />}
+          {step === 0 && <Step1Services services={services} selected={service} onSelect={setService} onNext={handleServiceNext} />}
+
+          {/* Staff selection step (only when multiple staff) */}
+          {step === 1 && hasMultiStaff && (
+            <div className="fade-up">
+              <h2 style={{ fontSize:20, fontWeight:800, marginBottom:6 }}>Elige tu profesional</h2>
+              <p style={{ color:'var(--muted)', fontSize:14, marginBottom:24 }}>Selecciona quién te atenderá</p>
+              <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:28 }}>
+                {/* "Any available" option */}
+                <div onClick={() => setSelectedStaff(null)}
+                  style={{
+                    display:'flex', alignItems:'center', gap:14,
+                    padding:'16px 18px', borderRadius:14,
+                    border:`2px solid ${selectedStaff === null ? 'var(--primary)' : 'var(--border)'}`,
+                    background: selectedStaff === null ? 'var(--primary-light)' : 'white',
+                    cursor:'pointer', transition:'all .18s',
+                    boxShadow: selectedStaff === null ? '0 0 0 4px rgba(255,92,58,0.1)' : 'var(--shadow)',
+                  }}
+                  onMouseOver={e => selectedStaff !== null && (e.currentTarget.style.borderColor = '#E0E0EE', e.currentTarget.style.transform = 'translateY(-1px)')}
+                  onMouseOut={e => selectedStaff !== null && (e.currentTarget.style.borderColor = 'var(--border)', e.currentTarget.style.transform = 'none')}
+                >
+                  <div style={{
+                    width:44, height:44, borderRadius:'50%',
+                    background: selectedStaff === null ? 'linear-gradient(135deg, #FF5C3A, #FF7A52)' : 'var(--border)',
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    color:'white', fontSize:18, flexShrink:0,
+                  }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <span style={{ fontSize:15, fontWeight:600 }}>Cualquier disponible</span>
+                    <div style={{ fontSize:13, color:'var(--muted)' }}>Te asignamos al mejor profesional</div>
+                  </div>
+                  <div style={{
+                    width:22, height:22, borderRadius:'50%', flexShrink:0,
+                    border:`2px solid ${selectedStaff === null ? 'var(--primary)' : 'var(--border)'}`,
+                    background: selectedStaff === null ? 'var(--primary)' : 'white',
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    color:'white', transition:'all .18s',
+                  }}>
+                    {selectedStaff === null && <IconCheck />}
+                  </div>
+                </div>
+
+                {/* Staff member cards */}
+                {staffMembers.map(sm => {
+                  const isSelected = selectedStaff?.id === sm.id
+                  const smInitials = sm.name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase()
+                  return (
+                    <div key={sm.id} onClick={() => setSelectedStaff(sm)}
+                      style={{
+                        display:'flex', alignItems:'center', gap:14,
+                        padding:'16px 18px', borderRadius:14,
+                        border:`2px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}`,
+                        background: isSelected ? 'var(--primary-light)' : 'white',
+                        cursor:'pointer', transition:'all .18s',
+                        boxShadow: isSelected ? '0 0 0 4px rgba(255,92,58,0.1)' : 'var(--shadow)',
+                      }}
+                      onMouseOver={e => !isSelected && (e.currentTarget.style.borderColor = '#E0E0EE', e.currentTarget.style.transform = 'translateY(-1px)')}
+                      onMouseOut={e => !isSelected && (e.currentTarget.style.borderColor = 'var(--border)', e.currentTarget.style.transform = 'none')}
+                    >
+                      <div style={{
+                        width:44, height:44, borderRadius:'50%',
+                        background: isSelected ? 'linear-gradient(135deg, #FF5C3A, #FF7A52)' : 'linear-gradient(135deg, #7070A0, #9090C0)',
+                        display:'flex', alignItems:'center', justifyContent:'center',
+                        color:'white', fontFamily:'Syne, sans-serif', fontSize:15, fontWeight:800, flexShrink:0,
+                        letterSpacing:'-0.5px',
+                      }}>
+                        {smInitials}
+                      </div>
+                      <div style={{ flex:1 }}>
+                        <span style={{ fontSize:15, fontWeight:600 }}>{sm.name}</span>
+                        {sm.role && <div style={{ fontSize:13, color:'var(--muted)' }}>{sm.role}</div>}
+                      </div>
+                      <div style={{
+                        width:22, height:22, borderRadius:'50%', flexShrink:0,
+                        border:`2px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}`,
+                        background: isSelected ? 'var(--primary)' : 'white',
+                        display:'flex', alignItems:'center', justifyContent:'center',
+                        color:'white', transition:'all .18s',
+                      }}>
+                        {isSelected && <IconCheck />}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div style={{ display:'flex', gap:10 }}>
+                <button onClick={() => setStep(0)} style={{
+                  padding:'14px 20px', borderRadius:14, border:'2px solid var(--border)',
+                  background:'white', cursor:'pointer', display:'flex', alignItems:'center', gap:6,
+                  fontFamily:'DM Sans, sans-serif', fontSize:14, fontWeight:600, color:'var(--muted)',
+                }}>
+                  <IconBack />
+                </button>
+                <button onClick={() => setStep(2)}
+                  style={{
+                    flex:1, padding:'15px', borderRadius:14, border:'none',
+                    background: 'linear-gradient(135deg, #FF5C3A, #FF7A52)',
+                    color: 'white',
+                    fontFamily:'Syne, sans-serif', fontSize:16, fontWeight:700,
+                    cursor: 'pointer',
+                    display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+                    boxShadow: '0 6px 24px rgba(255,92,58,0.3)',
+                    transition:'all .2s',
+                  }}>
+                  Siguiente <IconArrow />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === (1 + stepOffset) && <Step2DateTime slug={slug} service={service} staffId={selectedStaff?.id} onNext={handleDateTimeNext} onBack={() => setStep(stepOffset > 0 ? 1 : 0)} />}
+          {step === (2 + stepOffset) && <Step3Contact slug={slug} booking={{ service, dateTime, staffId: selectedStaff?.id, staffName: selectedStaff?.name }} onNext={handleContactNext} onBack={() => setStep(1 + stepOffset)} />}
+          {step === (3 + stepOffset) && <Step4Confirmation business={business} booking={{ service, dateTime, contact, staffName: selectedStaff?.name }} />}
         </div>
 
         {/* Footer */}
-        {step < 3 && (
+        {step < (3 + stepOffset) && (
           <p style={{ marginTop:20, fontSize:12, color:'var(--muted)', textAlign:'center' }}>
             Powered by <a href="https://agendamx.net" style={{ color:'var(--primary)', textDecoration:'none', fontWeight:600 }}>AgendaMX</a> · Tu cita en 2 minutos 🚀
           </p>

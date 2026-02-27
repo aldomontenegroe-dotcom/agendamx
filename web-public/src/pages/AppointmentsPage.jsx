@@ -117,6 +117,8 @@ export default function AppointmentsPage() {
   const [formDate, setFormDate] = useState(getTodayStr())
   const [formTime, setFormTime] = useState('')
   const [formNotes, setFormNotes] = useState('')
+  const [staffList, setStaffList] = useState([])
+  const [formStaffId, setFormStaffId] = useState('')
 
   const fetchAppointments = () => {
     setLoading(true)
@@ -173,7 +175,9 @@ export default function AppointmentsPage() {
     setFormDate(selectedDate)
     setFormTime('')
     setFormNotes('')
+    setFormStaffId('')
     fetchServices()
+    apiFetch('/api/staff').then(data => setStaffList(data.staff || [])).catch(() => setStaffList([]))
     setModalOpen(true)
   }
 
@@ -197,6 +201,7 @@ export default function AppointmentsPage() {
           clientPhone: formClientPhone.trim() || null,
           startsAt,
           staffNotes: formNotes.trim() || null,
+          staffId: formStaffId || null,
         }),
       })
       closeModal()
@@ -452,6 +457,9 @@ export default function AppointmentsPage() {
                     }} />
                     <span style={{ fontSize: 13, color: '#7070A0', fontFamily: 'DM Sans, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {service} &middot; {appt.duration_min || '?'} min
+                      {appt.staff_name && (
+                        <span style={{ color: '#7070A0', marginLeft: 4 }}>&middot; {appt.staff_name}</span>
+                      )}
                     </span>
                   </div>
                 </div>
@@ -614,6 +622,25 @@ export default function AppointmentsPage() {
                   ))}
                 </select>
               </div>
+
+              {/* Staff dropdown */}
+              {staffList.length > 1 && (
+                <div style={{ marginBottom: 16 }}>
+                  <label style={labelStyle}>Asignar a</label>
+                  <select
+                    value={formStaffId}
+                    onChange={e => setFormStaffId(e.target.value)}
+                    style={{ ...inputStyle, cursor: 'pointer' }}
+                  >
+                    <option value="" style={{ background: '#13131A' }}>Cualquier disponible</option>
+                    {staffList.map(s => (
+                      <option key={s.id} value={s.id} style={{ background: '#13131A' }}>
+                        {s.name}{s.role === 'owner' ? ' (Dueno)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Client Name */}
               <div>

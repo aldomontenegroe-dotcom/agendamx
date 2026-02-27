@@ -48,7 +48,7 @@ exports.list = async (req, res) => {
 // ─── Crear cita (desde panel admin) ──────────────────────────────
 exports.create = async (req, res) => {
   const businessId = req.user.businessId
-  const { serviceId, clientName, clientPhone, startsAt, staffNotes } = req.body
+  const { serviceId, clientName, clientPhone, startsAt, staffNotes, staffId } = req.body
 
   if (!serviceId || !clientName || !startsAt) {
     return res.status(400).json({ error: 'Servicio, nombre de cliente y fecha requeridos' })
@@ -69,15 +69,24 @@ exports.create = async (req, res) => {
     const { duration_min, price } = service.rows[0]
     const endsAt = new Date(new Date(startsAt).getTime() + duration_min * 60000)
 
-    // Verificar disponibilidad con lock
-    const conflict = await client.query(
-      `SELECT id FROM appointments
+    // Verificar disponibilidad con lock (staff-aware)
+    let conflictQuery, conflictParams
+    if (staffId) {
+      conflictQuery = `SELECT id FROM appointments
+       WHERE business_id = $1 AND staff_id = $4
+         AND status NOT IN ('cancelled')
+         AND tstzrange(starts_at, ends_at) && tstzrange($2::timestamptz, $3::timestamptz)
+       FOR UPDATE`
+      conflictParams = [businessId, startsAt, endsAt.toISOString(), staffId]
+    } else {
+      conflictQuery = `SELECT id FROM appointments
        WHERE business_id = $1
          AND status NOT IN ('cancelled')
          AND tstzrange(starts_at, ends_at) && tstzrange($2::timestamptz, $3::timestamptz)
-       FOR UPDATE`,
-      [businessId, startsAt, endsAt.toISOString()]
-    )
+       FOR UPDATE`
+      conflictParams = [businessId, startsAt, endsAt.toISOString()]
+    }
+    const conflict = await client.query(conflictQuery, conflictParams)
     if (conflict.rows.length > 0) {
       await client.query('ROLLBACK')
       return res.status(409).json({ error: 'Ese horario ya está ocupado' })
@@ -104,12 +113,19 @@ exports.create = async (req, res) => {
 
     const result = await client.query(
       `INSERT INTO appointments
-         (business_id, service_id, client_id, starts_at, ends_at, client_name, client_phone, staff_notes, price, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'confirmed')
+         (business_id, service_id, client_id, staff_id, starts_at, ends_at, client_name, client_phone, staff_notes, price, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'confirmed')
        RETURNING *`,
-      [businessId, serviceId, clientRecord?.rows[0]?.id || null, startsAt, endsAt.toISOString(), clientName, clientPhone || null, staffNotes || null, price]
+      [businessId, serviceId, clientRecord?.rows[0]?.id || null, staffId || null, startsAt, endsAt.toISOString(), clientName, clientPhone || null, staffNotes || null, price]
     )
     await client.query('COMMIT')
+
+    // Look up staff name for notifications
+    let staffName = null
+    if (staffId) {
+      const staffRes = await db.query('SELECT name FROM users WHERE id = $1', [staffId])
+      staffName = staffRes.rows[0]?.name || null
+    }
 
     // WhatsApp confirmation to client (fire-and-forget)
     if (clientPhone) {
@@ -120,7 +136,7 @@ exports.create = async (req, res) => {
       waService.sendConfirmation({
         clientPhone: normalizedPhone, clientName,
         businessName: biz.rows[0]?.name, serviceName: svc.rows[0]?.name,
-        startsAt, price, slug: biz.rows[0]?.slug,
+        startsAt, price, slug: biz.rows[0]?.slug, staffName,
       }).catch(e => console.error('WA admin-create error:', e))
     }
 
@@ -165,7 +181,7 @@ exports.updateStatus = async (req, res) => {
 // ─── Disponibilidad pública (para la página de reservas) ──────────
 exports.availability = async (req, res) => {
   const { slug } = req.params
-  const { serviceId, date } = req.query
+  const { serviceId, date, staffId } = req.query
 
   if (!serviceId || !date) {
     return res.status(400).json({ error: 'serviceId y date requeridos' })
@@ -204,14 +220,38 @@ exports.availability = async (req, res) => {
     }
     const { opens_at, closes_at } = hours.rows[0]
 
-    // Citas existentes ese día
-    const existing = await db.query(
-      `SELECT starts_at, ends_at FROM appointments
+    // Staff count for "any available" mode
+    const allStaff = await db.query(
+      `SELECT id FROM users WHERE business_id = $1 AND is_active = true AND role IN ('owner','staff')`,
+      [businessId]
+    )
+    const staffCount = allStaff.rows.length
+
+    // Citas existentes ese día (staff-aware)
+    let existingQuery, existingParams
+    if (staffId) {
+      // Specific staff: only their appointments
+      existingQuery = `SELECT starts_at, ends_at FROM appointments
+       WHERE business_id = $1 AND staff_id = $4
+         AND status NOT IN ('cancelled')
+         AND DATE(starts_at AT TIME ZONE $3) = $2`
+      existingParams = [businessId, date, tz, staffId]
+    } else if (staffCount > 1) {
+      // "Any available": get all appointments with staff_id to count per-slot
+      existingQuery = `SELECT starts_at, ends_at, staff_id FROM appointments
        WHERE business_id = $1
          AND status NOT IN ('cancelled')
-         AND DATE(starts_at AT TIME ZONE $3) = $2`,
-      [businessId, date, tz]
-    )
+         AND DATE(starts_at AT TIME ZONE $3) = $2`
+      existingParams = [businessId, date, tz]
+    } else {
+      // Single staff or none: business-wide (backward compat)
+      existingQuery = `SELECT starts_at, ends_at FROM appointments
+       WHERE business_id = $1
+         AND status NOT IN ('cancelled')
+         AND DATE(starts_at AT TIME ZONE $3) = $2`
+      existingParams = [businessId, date, tz]
+    }
+    const existing = await db.query(existingQuery, existingParams)
 
     // Generar todos los slots cada 30 min
     const slots = []
@@ -226,19 +266,34 @@ exports.availability = async (req, res) => {
       const slotStart = new Date(`${date}T${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}:00`)
       const slotEnd   = new Date(slotStart.getTime() + duration * 60000)
 
-      // ¿Hay conflicto?
-      const busy = existing.rows.some(appt => {
-        const aStart = new Date(appt.starts_at)
-        const aEnd   = new Date(appt.ends_at)
-        return slotStart < aEnd && slotEnd > aStart
-      })
-
       // No mostrar slots pasados
       if (slotStart <= new Date()) continue
 
+      let available
+      if (!staffId && staffCount > 1) {
+        // "Any available" — slot is free if at least 1 staff member has no conflict
+        const busyStaff = new Set()
+        existing.rows.forEach(appt => {
+          const aStart = new Date(appt.starts_at)
+          const aEnd = new Date(appt.ends_at)
+          if (slotStart < aEnd && slotEnd > aStart && appt.staff_id) {
+            busyStaff.add(appt.staff_id)
+          }
+        })
+        available = busyStaff.size < staffCount
+      } else {
+        // Specific staff or single staff: simple conflict check
+        const busy = existing.rows.some(appt => {
+          const aStart = new Date(appt.starts_at)
+          const aEnd   = new Date(appt.ends_at)
+          return slotStart < aEnd && slotEnd > aStart
+        })
+        available = !busy
+      }
+
       slots.push({
         time: `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`,
-        available: !busy,
+        available,
       })
     }
 
@@ -252,7 +307,7 @@ exports.availability = async (req, res) => {
 // ─── Reserva pública (cliente final) ──────────────────────────────
 exports.book = async (req, res) => {
   const { slug } = req.params
-  const { serviceId, startsAt, clientName, clientPhone, clientNotes } = req.body
+  const { serviceId, startsAt, clientName, clientPhone, clientNotes, staffId } = req.body
 
   if (!serviceId || !startsAt || !clientName || !clientPhone) {
     return res.status(400).json({ error: 'Datos incompletos' })
@@ -286,18 +341,75 @@ exports.book = async (req, res) => {
     const service = svc.rows[0]
     const endsAt = new Date(new Date(startsAt).getTime() + service.duration_min * 60000)
 
-    // Verificar disponibilidad con lock
-    const conflict = await txn.query(
-      `SELECT id FROM appointments
-       WHERE business_id = $1
-         AND status NOT IN ('cancelled')
-         AND tstzrange(starts_at, ends_at) && tstzrange($2::timestamptz, $3::timestamptz)
-       FOR UPDATE`,
-      [businessId, startsAt, endsAt.toISOString()]
-    )
-    if (conflict.rows.length > 0) {
-      await txn.query('ROLLBACK')
-      return res.status(409).json({ error: 'Ese horario ya no está disponible, elige otro' })
+    // Resolve staff assignment
+    let assignedStaffId = null
+    let staffName = null
+    if (staffId) {
+      // Validate specific staff
+      const staffCheck = await txn.query(
+        'SELECT id, name FROM users WHERE id = $1 AND business_id = $2 AND is_active = true',
+        [staffId, businessId]
+      )
+      if (staffCheck.rows.length === 0) {
+        await txn.query('ROLLBACK')
+        return res.status(400).json({ error: 'Profesional no encontrado' })
+      }
+      assignedStaffId = staffId
+      staffName = staffCheck.rows[0].name
+      // Check conflict for this specific staff
+      const conflict = await txn.query(
+        `SELECT id FROM appointments
+         WHERE business_id = $1 AND staff_id = $4
+           AND status NOT IN ('cancelled')
+           AND tstzrange(starts_at, ends_at) && tstzrange($2::timestamptz, $3::timestamptz)
+         FOR UPDATE`,
+        [businessId, startsAt, endsAt.toISOString(), staffId]
+      )
+      if (conflict.rows.length > 0) {
+        await txn.query('ROLLBACK')
+        return res.status(409).json({ error: 'Ese horario ya no está disponible, elige otro' })
+      }
+    } else {
+      // Auto-assign: find first available staff
+      const allStaff = await txn.query(
+        `SELECT id, name FROM users WHERE business_id = $1 AND is_active = true AND role IN ('owner','staff') ORDER BY role DESC, name`,
+        [businessId]
+      )
+      if (allStaff.rows.length > 0) {
+        for (const s of allStaff.rows) {
+          const conflict = await txn.query(
+            `SELECT id FROM appointments
+             WHERE business_id = $1 AND staff_id = $4
+               AND status NOT IN ('cancelled')
+               AND tstzrange(starts_at, ends_at) && tstzrange($2::timestamptz, $3::timestamptz)
+             FOR UPDATE`,
+            [businessId, startsAt, endsAt.toISOString(), s.id]
+          )
+          if (conflict.rows.length === 0) {
+            assignedStaffId = s.id
+            staffName = s.name
+            break
+          }
+        }
+        if (!assignedStaffId) {
+          await txn.query('ROLLBACK')
+          return res.status(409).json({ error: 'No hay personal disponible en ese horario' })
+        }
+      } else {
+        // No staff configured: business-wide check (backward compat)
+        const conflict = await txn.query(
+          `SELECT id FROM appointments
+           WHERE business_id = $1
+             AND status NOT IN ('cancelled')
+             AND tstzrange(starts_at, ends_at) && tstzrange($2::timestamptz, $3::timestamptz)
+           FOR UPDATE`,
+          [businessId, startsAt, endsAt.toISOString()]
+        )
+        if (conflict.rows.length > 0) {
+          await txn.query('ROLLBACK')
+          return res.status(409).json({ error: 'Ese horario ya no está disponible, elige otro' })
+        }
+      }
     }
 
     // Crear o encontrar cliente
@@ -315,11 +427,12 @@ exports.book = async (req, res) => {
     // Crear la cita
     const appt = await txn.query(
       `INSERT INTO appointments
-         (business_id, service_id, client_id, starts_at, ends_at,
+         (business_id, service_id, client_id, staff_id, starts_at, ends_at,
           client_name, client_phone, client_notes, price, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending')
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'pending')
        RETURNING id, starts_at, ends_at, status`,
-      [businessId, serviceId, client.rows[0].id, startsAt, endsAt.toISOString(),
+      [businessId, serviceId, client.rows[0].id, assignedStaffId,
+       startsAt, endsAt.toISOString(),
        clientName, normalizedPhone, clientNotes || null, service.price]
     )
     await txn.query('COMMIT')
@@ -327,7 +440,7 @@ exports.book = async (req, res) => {
     // WhatsApp (fire-and-forget, fuera del txn)
     waService.sendConfirmation({
       clientPhone: normalizedPhone, clientName, businessName: biz.rows[0].name,
-      serviceName: service.name, startsAt, price: service.price, slug,
+      serviceName: service.name, startsAt, price: service.price, slug, staffName,
     }).catch(e => console.error('WA client error:', e))
 
     db.query('SELECT phone FROM users WHERE business_id = $1 AND role = $2', [businessId, 'owner'])

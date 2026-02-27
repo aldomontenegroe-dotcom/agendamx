@@ -37,7 +37,7 @@ async function sendText(phone, text) {
 }
 
 // ─── Confirmación de cita al cliente ─────────────────────────────
-async function sendConfirmation({ clientPhone, clientName, businessName, serviceName, startsAt, price, slug }) {
+async function sendConfirmation({ clientPhone, clientName, businessName, serviceName, startsAt, price, slug, staffName }) {
   const date = new Date(startsAt)
   const dateStr = date.toLocaleDateString('es-MX', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
@@ -51,6 +51,7 @@ async function sendConfirmation({ clientPhone, clientName, businessName, service
     `✅ *¡Cita confirmada!*\n\n` +
     `Hola ${clientName}, tu cita está lista 🎉\n\n` +
     `📋 *Servicio:* ${serviceName}\n` +
+    (staffName ? `👤 *Con:* ${staffName}\n` : '') +
     `📅 *Fecha:* ${dateStr}\n` +
     `🕐 *Hora:* ${timeStr}\n` +
     `💰 *Total:* $${price} MXN\n\n` +

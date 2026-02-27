@@ -60,8 +60,9 @@ export default function LandingPage({ onLogin, onRegister }) {
       period: '/mes',
       highlight: false,
       features: [
-        '10 citas/mes',
-        '1 servicio',
+        '20 citas/mes',
+        '3 servicios',
+        '1 profesional',
         'Bot WhatsApp',
         'Página de reservas',
       ],
@@ -72,8 +73,9 @@ export default function LandingPage({ onLogin, onRegister }) {
       period: '/mes',
       highlight: true,
       features: [
-        '100 citas/mes',
+        '200 citas/mes',
         'Servicios ilimitados',
+        'Hasta 3 profesionales',
         'Panel completo',
         'Recordatorios',
       ],
@@ -86,6 +88,7 @@ export default function LandingPage({ onLogin, onRegister }) {
       features: [
         'Citas ilimitadas',
         'Todo lo anterior',
+        'Profesionales ilimitados',
         'Soporte prioritario',
         'Analytics avanzado',
       ],

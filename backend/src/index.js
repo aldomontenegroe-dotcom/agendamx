@@ -39,6 +39,7 @@ app.use('/api/businesses',     require('./routes/businesses'))
 app.use('/api/business-hours', require('./routes/businessHours'))
 app.use('/api/clients',        require('./routes/clients'))
 app.use('/api/stats',          require('./routes/stats'))
+app.use('/api/staff',          require('./routes/staff'))
 app.use('/api/subscription', require('./routes/subscription'))
 
 // ─── Error handlers ───────────────────────────────────────────────

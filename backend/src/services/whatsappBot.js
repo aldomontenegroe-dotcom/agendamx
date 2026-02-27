@@ -413,6 +413,12 @@ async function startBooking(phone, biz, contactName) {
   )
   if (!services.rows.length) return wa.sendText(phone, 'No hay servicios disponibles en este momento.')
 
+  // Fetch staff members
+  const staffResult = await db.query(
+    `SELECT id, name FROM users WHERE business_id = $1 AND is_active = true AND role IN ('owner','staff') ORDER BY role DESC, name`,
+    [biz.id]
+  )
+
   let msg = `📅 *Agendar cita en ${biz.name}*\n\n¿Qué servicio necesitas? Responde con el *número*:\n\n`
   services.rows.forEach((s, i) => {
     msg += `${EMOJIS_NUM[i] || (i+1)+'.'} ${s.icon || ''} ${s.name}`
@@ -431,7 +437,49 @@ async function startBooking(phone, biz, contactName) {
     step: 'BOOK_SELECT_SERVICE',
     businessId: biz.id, businessName: biz.name, slug: biz.slug,
     services: services.rows,
+    staffMembers: staffResult.rows,
     clientName: client.rows[0]?.name || contactName || null,
+  })
+
+  return wa.sendText(phone, msg)
+}
+
+// ─── Helper: generate date selection menu ──────────────────────
+async function sendDateSelection(phone, state) {
+  const hours = await db.query(
+    'SELECT day_of_week, opens_at, closes_at, is_open FROM business_hours WHERE business_id = $1',
+    [state.businessId]
+  )
+  const hoursMap = {}
+  for (const h of hours.rows) hoursMap[h.day_of_week] = h
+
+  const dates = []
+  const today = new Date()
+  for (let i = 0; dates.length < 5 && i < 14; i++) {
+    const d = new Date(today)
+    d.setDate(d.getDate() + i)
+    const dow = d.getDay()
+    if (hoursMap[dow] && hoursMap[dow].is_open) {
+      dates.push({
+        date: d.toISOString().split('T')[0],
+        dayName: d.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'America/Mexico_City' }),
+        label: i === 0 ? 'Hoy' : i === 1 ? 'Mañana' : null,
+      })
+    }
+  }
+
+  if (!dates.length) return wa.sendText(phone, 'No hay días disponibles próximamente. Contacta al negocio.')
+
+  let msg = `📅 *${state.serviceName}* — ¿Qué día?\n\n`
+  dates.forEach((d, i) => {
+    msg += `${EMOJIS_NUM[i]} ${d.label ? d.label + ' (' + d.dayName + ')' : d.dayName}\n`
+  })
+  msg += `\n_Escribe *CANCELAR* para salir_`
+
+  setState(phone, {
+    ...state,
+    step: 'BOOK_SELECT_DATE',
+    dates,
   })
 
   return wa.sendText(phone, msg)
@@ -447,45 +495,65 @@ async function handleBookingStep(phone, text, state, contactName) {
       }
       const service = state.services[num - 1]
 
-      // Get next 5 open business days
-      const hours = await db.query(
-        'SELECT day_of_week, opens_at, closes_at, is_open FROM business_hours WHERE business_id = $1',
-        [state.businessId]
-      )
-      const hoursMap = {}
-      for (const h of hours.rows) hoursMap[h.day_of_week] = h
-
-      const dates = []
-      const today = new Date()
-      for (let i = 0; dates.length < 5 && i < 14; i++) {
-        const d = new Date(today)
-        d.setDate(d.getDate() + i)
-        const dow = d.getDay()
-        if (hoursMap[dow] && hoursMap[dow].is_open) {
-          dates.push({
-            date: d.toISOString().split('T')[0],
-            dayName: d.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'America/Mexico_City' }),
-            label: i === 0 ? 'Hoy' : i === 1 ? 'Mañana' : null,
-          })
-        }
+      const updatedState = {
+        ...state,
+        serviceId: service.id, serviceName: service.name, serviceDuration: service.duration_min, servicePrice: service.price,
       }
 
-      if (!dates.length) return wa.sendText(phone, 'No hay días disponibles próximamente. Contacta al negocio.')
+      // If multiple staff, show staff selection
+      if (state.staffMembers && state.staffMembers.length > 1) {
+        let msg = `👤 *${service.name}* — ¿Con quién deseas tu cita?\n\n`
+        msg += `${EMOJIS_NUM[0]} Cualquier disponible\n`
+        state.staffMembers.forEach((s, i) => {
+          msg += `${EMOJIS_NUM[i + 1]} ${s.name}\n`
+        })
+        msg += `\n_Escribe *CANCELAR* para salir_`
 
-      let msg = `📅 *${service.name}* — ¿Qué día?\n\n`
-      dates.forEach((d, i) => {
-        msg += `${EMOJIS_NUM[i]} ${d.label ? d.label + ' (' + d.dayName + ')' : d.dayName}\n`
-      })
-      msg += `\n_Escribe *CANCELAR* para salir_`
+        setState(phone, {
+          ...updatedState,
+          step: 'BOOK_SELECT_STAFF',
+        })
 
+        return wa.sendText(phone, msg)
+      }
+
+      // Single or no staff: skip staff selection
+      const singleStaff = (state.staffMembers && state.staffMembers.length === 1) ? state.staffMembers[0] : null
       setState(phone, {
-        ...state,
-        step: 'BOOK_SELECT_DATE',
-        serviceId: service.id, serviceName: service.name, serviceDuration: service.duration_min, servicePrice: service.price,
-        dates,
+        ...updatedState,
+        staffId: singleStaff ? singleStaff.id : null,
+        staffName: singleStaff ? singleStaff.name : null,
       })
 
-      return wa.sendText(phone, msg)
+      return sendDateSelection(phone, {
+        ...updatedState,
+        staffId: singleStaff ? singleStaff.id : null,
+        staffName: singleStaff ? singleStaff.name : null,
+      })
+    }
+
+    case 'BOOK_SELECT_STAFF': {
+      const maxOption = state.staffMembers.length + 1 // +1 for "Cualquier disponible"
+      if (isNaN(num) || num < 1 || num > maxOption) {
+        return wa.sendText(phone, `Por favor responde con un número del 1 al ${maxOption}.`)
+      }
+
+      let staffId = null
+      let staffName = null
+      if (num === 1) {
+        // "Cualquier disponible"
+        staffId = null
+        staffName = null
+      } else {
+        const selectedStaff = state.staffMembers[num - 2]
+        staffId = selectedStaff.id
+        staffName = selectedStaff.name
+      }
+
+      const updatedState = { ...state, staffId, staffName }
+      setState(phone, updatedState)
+
+      return sendDateSelection(phone, updatedState)
     }
 
     case 'BOOK_SELECT_DATE': {
@@ -509,13 +577,16 @@ async function handleBookingStep(phone, text, state, contactName) {
       const closeMin = ch * 60 + cm
       const duration = state.serviceDuration
 
-      // Get existing appointments
-      const existing = await db.query(
-        `SELECT starts_at, ends_at FROM appointments
+      // Get existing appointments (filter by staff if selected)
+      let existingQuery = `SELECT starts_at, ends_at FROM appointments
          WHERE business_id = $1 AND status NOT IN ('cancelled')
-           AND DATE(starts_at AT TIME ZONE 'America/Mexico_City') = $2`,
-        [state.businessId, selectedDate.date]
-      )
+           AND DATE(starts_at AT TIME ZONE 'America/Mexico_City') = $2`
+      const existingParams = [state.businessId, selectedDate.date]
+      if (state.staffId) {
+        existingQuery += ` AND staff_id = $3`
+        existingParams.push(state.staffId)
+      }
+      const existing = await db.query(existingQuery, existingParams)
 
       const slots = []
       const now = new Date()
@@ -581,6 +652,7 @@ async function handleBookingStep(phone, text, state, contactName) {
         return wa.sendText(phone,
           `📋 *Resumen de tu cita:*\n\n` +
           `📌 *Servicio:* ${state.serviceName}\n` +
+          (state.staffName ? `✂️ *Con:* ${state.staffName}\n` : '') +
           `📅 *Fecha:* ${dateStr}\n` +
           `🕐 *Hora:* ${selectedTime}\n` +
           `👤 *Nombre:* ${state.clientName}\n` +
@@ -607,6 +679,7 @@ async function handleBookingStep(phone, text, state, contactName) {
       return wa.sendText(phone,
         `📋 *Resumen de tu cita:*\n\n` +
         `📌 *Servicio:* ${state.serviceName}\n` +
+        (state.staffName ? `✂️ *Con:* ${state.staffName}\n` : '') +
         `📅 *Fecha:* ${dateStr}\n` +
         `🕐 *Hora:* ${state.time}\n` +
         `👤 *Nombre:* ${name}\n` +
@@ -642,14 +715,17 @@ async function handleBookingStep(phone, text, state, contactName) {
         const service = svc.rows[0]
         const endsAt = new Date(new Date(state.startsAt).getTime() + service.duration_min * 60000)
 
-        // Check availability with lock
-        const conflict = await txn.query(
-          `SELECT id FROM appointments
+        // Check availability with lock (staff-aware)
+        let conflictQuery = `SELECT id FROM appointments
            WHERE business_id = $1 AND status NOT IN ('cancelled')
-             AND tsrange(starts_at, ends_at) && tsrange($2::timestamptz, $3::timestamptz)
-           FOR UPDATE`,
-          [state.businessId, state.startsAt, endsAt.toISOString()]
-        )
+             AND tsrange(starts_at, ends_at) && tsrange($2::timestamptz, $3::timestamptz)`
+        const conflictParams = [state.businessId, state.startsAt, endsAt.toISOString()]
+        if (state.staffId) {
+          conflictQuery += ` AND staff_id = $4`
+          conflictParams.push(state.staffId)
+        }
+        conflictQuery += ` FOR UPDATE`
+        const conflict = await txn.query(conflictQuery, conflictParams)
         if (conflict.rows.length) {
           await txn.query('ROLLBACK')
           clearState(phone)
@@ -671,10 +747,10 @@ async function handleBookingStep(phone, text, state, contactName) {
         // Create appointment
         await txn.query(
           `INSERT INTO appointments
-             (business_id, service_id, client_id, starts_at, ends_at,
+             (business_id, service_id, client_id, staff_id, starts_at, ends_at,
               client_name, client_phone, price, status)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'pending')`,
-          [state.businessId, state.serviceId, client.rows[0].id,
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending')`,
+          [state.businessId, state.serviceId, client.rows[0].id, state.staffId || null,
            state.startsAt, endsAt.toISOString(),
            state.clientName, phone, service.price]
         )
