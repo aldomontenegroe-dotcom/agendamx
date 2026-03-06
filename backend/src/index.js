@@ -41,6 +41,7 @@ app.use('/api/business-hours', require('./routes/businessHours'))
 app.use('/api/clients',        require('./routes/clients'))
 app.use('/api/stats',          require('./routes/stats'))
 app.use('/api/staff',          require('./routes/staff'))
+app.use('/api/admin',          require('./routes/superAdmin'))
 app.use('/api/subscription', require('./routes/subscription'))
 app.use('/api/payments',     require('./routes/payments'))
 
