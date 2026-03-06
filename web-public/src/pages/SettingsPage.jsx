@@ -1,17 +1,6 @@
 import { useState, useEffect } from 'react'
+import { Check, Copy } from 'lucide-react'
 import { apiFetch } from '../utils/api'
-
-const IconCopy = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-  </svg>
-)
-
-const IconCheck = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 6 9 17l-5-5" />
-  </svg>
-)
 
 const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 
@@ -32,7 +21,7 @@ const inputStyle = {
   color: '#F0F0FF',
   padding: '10px 14px',
   fontSize: 14,
-  fontFamily: 'DM Sans, sans-serif',
+  fontFamily: "'Inter', sans-serif",
   outline: 'none',
   boxSizing: 'border-box',
 }
@@ -42,7 +31,7 @@ const labelStyle = {
   fontSize: 12,
   color: '#7070A0',
   marginBottom: 6,
-  fontFamily: 'DM Sans, sans-serif',
+  fontFamily: "'Inter', sans-serif",
   fontWeight: 500,
 }
 
@@ -133,7 +122,7 @@ export default function SettingsPage() {
           accentColor: b.accent_color || '#FF5C3A',
         })
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setBizLoading(false))
   }, [])
 
@@ -157,7 +146,7 @@ export default function SettingsPage() {
         })
         setHours(merged)
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setHoursLoading(false))
   }, [])
 
@@ -203,7 +192,7 @@ export default function SettingsPage() {
         setLinkCopied(true)
         setTimeout(() => setLinkCopied(false), 2000)
       })
-      .catch(() => {})
+      .catch(() => { })
   }
 
   const bookingUrl = `https://agendamx.net/${business?.slug || ''}`
@@ -212,10 +201,10 @@ export default function SettingsPage() {
     <div style={{ padding: 0, maxWidth: 820 }}>
       {/* Header */}
       <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: 26, fontWeight: 800, color: '#F0F0FF', marginBottom: 4 }}>
+        <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 800, color: '#F0F0FF', marginBottom: 4 }}>
           Ajustes
         </h1>
-        <p style={{ color: '#7070A0', fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}>
+        <p style={{ color: '#7070A0', fontSize: 14, fontFamily: "'Inter', sans-serif" }}>
           Configura tu negocio y horarios de operación
         </p>
       </div>
@@ -228,13 +217,13 @@ export default function SettingsPage() {
         padding: '28px',
         marginBottom: 24,
       }}>
-        <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 700, color: '#F0F0FF', marginBottom: 24 }}>
+        <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 700, color: '#F0F0FF', marginBottom: 24 }}>
           Datos del Negocio
         </h2>
 
         {bizLoading ? (
           <div style={{ padding: '40px 0', textAlign: 'center' }}>
-            <p style={{ color: '#7070A0', fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}>Cargando datos del negocio...</p>
+            <p style={{ color: '#7070A0', fontSize: 14, fontFamily: "'Inter', sans-serif" }}>Cargando datos del negocio...</p>
           </div>
         ) : (
           <>
@@ -360,7 +349,7 @@ export default function SettingsPage() {
                       padding: 2,
                     }}
                   />
-                  <span style={{ fontSize: 14, color: '#F0F0FF', fontFamily: 'DM Sans, sans-serif' }}>
+                  <span style={{ fontSize: 14, color: '#F0F0FF', fontFamily: "'Inter', sans-serif" }}>
                     {bizForm.accentColor}
                   </span>
                 </div>
@@ -381,7 +370,7 @@ export default function SettingsPage() {
                   cursor: bizSaving || !bizForm.name.trim() ? 'not-allowed' : 'pointer',
                   fontSize: 14,
                   fontWeight: 600,
-                  fontFamily: 'DM Sans, sans-serif',
+                  fontFamily: "'Inter', sans-serif",
                   boxShadow: '0 4px 20px rgba(255,92,58,0.3)',
                   opacity: bizSaving || !bizForm.name.trim() ? 0.6 : 1,
                 }}
@@ -389,8 +378,8 @@ export default function SettingsPage() {
                 {bizSaving ? 'Guardando...' : 'Guardar cambios'}
               </button>
               {bizSuccess && (
-                <span style={{ fontSize: 14, color: '#00E5A0', fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <IconCheck /> Cambios guardados
+                <span style={{ fontSize: 14, color: '#00E5A0', fontFamily: "'Inter', sans-serif", display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Check size={16} /> Cambios guardados
                 </span>
               )}
             </div>
@@ -404,7 +393,7 @@ export default function SettingsPage() {
                 background: 'rgba(255,255,255,0.02)',
                 border: '1px solid rgba(255,255,255,0.06)',
               }}>
-                <p style={{ fontSize: 12, color: '#7070A0', marginBottom: 8, fontFamily: 'DM Sans, sans-serif' }}>
+                <p style={{ fontSize: 12, color: '#7070A0', marginBottom: 8, fontFamily: "'Inter', sans-serif" }}>
                   Enlace público de reservas
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -412,7 +401,7 @@ export default function SettingsPage() {
                     flex: 1,
                     fontSize: 14,
                     color: '#FF5C3A',
-                    fontFamily: 'DM Sans, sans-serif',
+                    fontFamily: "'Inter', sans-serif",
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
@@ -432,12 +421,12 @@ export default function SettingsPage() {
                       color: linkCopied ? '#00E5A0' : '#F0F0FF',
                       cursor: 'pointer',
                       fontSize: 13,
-                      fontFamily: 'DM Sans, sans-serif',
+                      fontFamily: "'Inter', sans-serif",
                       whiteSpace: 'nowrap',
                       transition: 'all 0.2s',
                     }}
                   >
-                    {linkCopied ? <><IconCheck /> Copiado</> : <><IconCopy /> Copiar enlace</>}
+                    {linkCopied ? <><Check size={16} /> Copiado</> : <><Copy size={16} /> Copiar enlace</>}
                   </button>
                 </div>
               </div>
@@ -454,13 +443,13 @@ export default function SettingsPage() {
         padding: '28px',
         marginBottom: 24,
       }}>
-        <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 700, color: '#F0F0FF', marginBottom: 24 }}>
+        <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 700, color: '#F0F0FF', marginBottom: 24 }}>
           Horarios de Operación
         </h2>
 
         {hoursLoading ? (
           <div style={{ padding: '40px 0', textAlign: 'center' }}>
-            <p style={{ color: '#7070A0', fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}>Cargando horarios...</p>
+            <p style={{ color: '#7070A0', fontSize: 14, fontFamily: "'Inter', sans-serif" }}>Cargando horarios...</p>
           </div>
         ) : (
           <>
@@ -485,7 +474,7 @@ export default function SettingsPage() {
                     fontSize: 14,
                     fontWeight: 600,
                     color: h.isOpen ? '#F0F0FF' : '#7070A0',
-                    fontFamily: 'DM Sans, sans-serif',
+                    fontFamily: "'Inter', sans-serif",
                     flexShrink: 0,
                   }}>
                     {dayNames[i]}
@@ -502,7 +491,7 @@ export default function SettingsPage() {
                     fontSize: 12,
                     fontWeight: 500,
                     color: h.isOpen ? '#00E5A0' : '#7070A0',
-                    fontFamily: 'DM Sans, sans-serif',
+                    fontFamily: "'Inter', sans-serif",
                     width: 56,
                     flexShrink: 0,
                   }}>
@@ -523,7 +512,7 @@ export default function SettingsPage() {
                         cursor: h.isOpen ? 'text' : 'not-allowed',
                       }}
                     />
-                    <span style={{ fontSize: 13, color: '#7070A0', fontFamily: 'DM Sans, sans-serif' }}>a</span>
+                    <span style={{ fontSize: 13, color: '#7070A0', fontFamily: "'Inter', sans-serif" }}>a</span>
                     <input
                       type="time"
                       value={h.closesAt}
@@ -555,7 +544,7 @@ export default function SettingsPage() {
                   cursor: hoursSaving ? 'not-allowed' : 'pointer',
                   fontSize: 14,
                   fontWeight: 600,
-                  fontFamily: 'DM Sans, sans-serif',
+                  fontFamily: "'Inter', sans-serif",
                   boxShadow: '0 4px 20px rgba(255,92,58,0.3)',
                   opacity: hoursSaving ? 0.6 : 1,
                 }}
@@ -563,8 +552,8 @@ export default function SettingsPage() {
                 {hoursSaving ? 'Guardando...' : 'Guardar horarios'}
               </button>
               {hoursSuccess && (
-                <span style={{ fontSize: 14, color: '#00E5A0', fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <IconCheck /> Horarios guardados
+                <span style={{ fontSize: 14, color: '#00E5A0', fontFamily: "'Inter', sans-serif", display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Check size={16} /> Horarios guardados
                 </span>
               )}
             </div>

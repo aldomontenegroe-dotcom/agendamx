@@ -38,7 +38,7 @@ const inputStyle = {
   color: '#F0F0FF',
   padding: '10px 14px',
   fontSize: 14,
-  fontFamily: 'DM Sans, sans-serif',
+  fontFamily: "'Inter', sans-serif",
   outline: 'none',
   boxSizing: 'border-box',
   transition: 'border-color 0.2s',
@@ -50,7 +50,7 @@ const labelStyle = {
   color: '#7070A0',
   marginBottom: 6,
   display: 'block',
-  fontFamily: 'DM Sans, sans-serif',
+  fontFamily: "'Inter', sans-serif",
 }
 
 export default function ServicesPage() {
@@ -189,7 +189,7 @@ export default function ServicesPage() {
           margin: '0 auto 16px', animation: 'spin 0.8s linear infinite',
         }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-        <p style={{ color: '#7070A0', fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}>Cargando servicios...</p>
+        <p style={{ color: '#7070A0', fontSize: 14, fontFamily: "'Inter', sans-serif" }}>Cargando servicios...</p>
       </div>
     )
   }
@@ -197,13 +197,13 @@ export default function ServicesPage() {
   if (error) {
     return (
       <div style={{ padding: '80px 0', textAlign: 'center' }}>
-        <p style={{ color: '#FF5C3A', fontSize: 14, marginBottom: 12, fontFamily: 'DM Sans, sans-serif' }}>{error}</p>
+        <p style={{ color: '#FF5C3A', fontSize: 14, marginBottom: 12, fontFamily: "'Inter', sans-serif" }}>{error}</p>
         <button
           onClick={fetchServices}
           style={{
             padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(255,92,58,0.3)',
             background: 'rgba(255,92,58,0.1)', color: '#FF5C3A', cursor: 'pointer',
-            fontSize: 13, fontFamily: 'DM Sans, sans-serif',
+            fontSize: 13, fontFamily: "'Inter', sans-serif",
           }}
         >
           Reintentar
@@ -217,10 +217,10 @@ export default function ServicesPage() {
       {/* Header */}
       <div className="fade-up" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
         <div>
-          <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: 26, fontWeight: 800, color: '#F0F0FF', marginBottom: 4 }}>
+          <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 800, color: '#F0F0FF', marginBottom: 4 }}>
             Servicios
           </h1>
-          <p style={{ color: '#7070A0', fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}>
+          <p style={{ color: '#7070A0', fontSize: 14, fontFamily: "'Inter', sans-serif" }}>
             {services.length} servicio{services.length !== 1 ? 's' : ''} registrado{services.length !== 1 ? 's' : ''}
           </p>
         </div>
@@ -231,7 +231,7 @@ export default function ServicesPage() {
             padding: '10px 20px', borderRadius: 10, border: 'none',
             background: 'linear-gradient(135deg, #FF5C3A, #FF7A52)',
             color: 'white', cursor: 'pointer', fontSize: 14, fontWeight: 600,
-            fontFamily: 'DM Sans, sans-serif',
+            fontFamily: "'Inter', sans-serif",
             boxShadow: '0 4px 20px rgba(255,92,58,0.3)',
             transition: 'transform 0.15s, box-shadow 0.15s',
           }}
@@ -256,21 +256,21 @@ export default function ServicesPage() {
           borderBottom: '1px solid rgba(255,255,255,0.06)',
           alignItems: 'center',
         }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#7070A0', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'DM Sans, sans-serif' }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#7070A0', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: "'Inter', sans-serif" }}>
           </span>
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#7070A0', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'DM Sans, sans-serif' }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#7070A0', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: "'Inter', sans-serif" }}>
             Nombre
           </span>
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#7070A0', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'DM Sans, sans-serif' }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#7070A0', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: "'Inter', sans-serif" }}>
             Duración
           </span>
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#7070A0', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'DM Sans, sans-serif' }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#7070A0', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: "'Inter', sans-serif" }}>
             Precio
           </span>
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#7070A0', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'DM Sans, sans-serif' }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#7070A0', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: "'Inter', sans-serif" }}>
             Estado
           </span>
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#7070A0', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'DM Sans, sans-serif', textAlign: 'right' }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#7070A0', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: "'Inter', sans-serif", textAlign: 'right' }}>
             Acciones
           </span>
         </div>
@@ -279,10 +279,10 @@ export default function ServicesPage() {
         {services.length === 0 ? (
           <div style={{ padding: '48px 24px', textAlign: 'center' }}>
             <p style={{ fontSize: 32, marginBottom: 12 }}>✨</p>
-            <p style={{ color: '#7070A0', fontSize: 14, fontFamily: 'DM Sans, sans-serif', marginBottom: 4 }}>
+            <p style={{ color: '#7070A0', fontSize: 14, fontFamily: "'Inter', sans-serif", marginBottom: 4 }}>
               No hay servicios registrados
             </p>
-            <p style={{ color: '#50506A', fontSize: 13, fontFamily: 'DM Sans, sans-serif' }}>
+            <p style={{ color: '#50506A', fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
               Agrega tu primer servicio para comenzar
             </p>
           </div>
@@ -313,23 +313,23 @@ export default function ServicesPage() {
 
               {/* Name + Description */}
               <div>
-                <p style={{ fontSize: 14, fontWeight: 600, color: '#F0F0FF', fontFamily: 'DM Sans, sans-serif', marginBottom: 2 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: '#F0F0FF', fontFamily: "'Inter', sans-serif", marginBottom: 2 }}>
                   {service.name}
                 </p>
                 {service.description && (
-                  <p style={{ fontSize: 12, color: '#7070A0', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.4 }}>
+                  <p style={{ fontSize: 12, color: '#7070A0', fontFamily: "'Inter', sans-serif", lineHeight: 1.4 }}>
                     {service.description.length > 60 ? service.description.substring(0, 60) + '...' : service.description}
                   </p>
                 )}
               </div>
 
               {/* Duration */}
-              <span style={{ fontSize: 14, color: '#F0F0FF', fontFamily: 'DM Sans, sans-serif' }}>
+              <span style={{ fontSize: 14, color: '#F0F0FF', fontFamily: "'Inter', sans-serif" }}>
                 {service.duration_min} min
               </span>
 
               {/* Price */}
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#F0F0FF', fontFamily: 'Syne, sans-serif' }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#F0F0FF', fontFamily: "'Inter', sans-serif" }}>
                 {service.price != null ? `$${Number(service.price).toLocaleString('es-MX')}` : '—'}
               </span>
 
@@ -428,7 +428,7 @@ export default function ServicesPage() {
           >
             {/* Modal Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
-              <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 20, fontWeight: 800, color: '#F0F0FF' }}>
+              <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 20, fontWeight: 800, color: '#F0F0FF' }}>
                 {editingService ? 'Editar servicio' : 'Nuevo servicio'}
               </h2>
               <button
@@ -554,7 +554,7 @@ export default function ServicesPage() {
                     border: '1px solid rgba(255,255,255,0.1)',
                     background: 'rgba(255,255,255,0.04)', color: '#7070A0',
                     cursor: 'pointer', fontSize: 14, fontWeight: 600,
-                    fontFamily: 'DM Sans, sans-serif',
+                    fontFamily: "'Inter', sans-serif",
                     transition: 'all 0.15s',
                   }}
                   onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#F0F0FF' }}
@@ -569,7 +569,7 @@ export default function ServicesPage() {
                     flex: 1, padding: '12px 20px', borderRadius: 10, border: 'none',
                     background: saving ? 'rgba(255,92,58,0.3)' : 'linear-gradient(135deg, #FF5C3A, #FF7A52)',
                     color: 'white', cursor: saving ? 'not-allowed' : 'pointer',
-                    fontSize: 14, fontWeight: 600, fontFamily: 'DM Sans, sans-serif',
+                    fontSize: 14, fontWeight: 600, fontFamily: "'Inter', sans-serif",
                     boxShadow: saving ? 'none' : '0 4px 20px rgba(255,92,58,0.3)',
                     transition: 'all 0.15s',
                   }}

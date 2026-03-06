@@ -82,7 +82,7 @@ export default function PlanPage() {
   if (loading) {
     return (
       <div style={{ padding: '80px 0', textAlign: 'center' }}>
-        <p style={{ color: '#7070A0', fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}>Cargando planes...</p>
+        <p style={{ color: '#7070A0', fontSize: 14, fontFamily: "'Inter', sans-serif" }}>Cargando planes...</p>
       </div>
     )
   }
@@ -90,13 +90,13 @@ export default function PlanPage() {
   if (error) {
     return (
       <div style={{ padding: '80px 0', textAlign: 'center' }}>
-        <p style={{ color: '#FF5C3A', fontSize: 14, marginBottom: 12, fontFamily: 'DM Sans, sans-serif' }}>{error}</p>
+        <p style={{ color: '#FF5C3A', fontSize: 14, marginBottom: 12, fontFamily: "'Inter', sans-serif" }}>{error}</p>
         <button
           onClick={() => window.location.reload()}
           style={{
             padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(255,92,58,0.3)',
             background: 'rgba(255,92,58,0.1)', color: '#FF5C3A', cursor: 'pointer',
-            fontSize: 13, fontFamily: 'DM Sans, sans-serif',
+            fontSize: 13, fontFamily: "'Inter', sans-serif",
           }}
         >
           Reintentar
@@ -109,7 +109,7 @@ export default function PlanPage() {
     <div style={{ padding: '40px 0' }}>
       {/* Header */}
       <div className="fade-up" style={{ marginBottom: 32 }}>
-        <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: 26, fontWeight: 800, marginBottom: 8 }}>
+        <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 800, marginBottom: 8 }}>
           Tu Plan
         </h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -117,20 +117,20 @@ export default function PlanPage() {
             display: 'inline-block', padding: '4px 14px', borderRadius: 8,
             background: currentPlan === 'free' ? 'rgba(112,112,160,0.15)' : 'rgba(255,92,58,0.15)',
             color: currentPlan === 'free' ? '#7070A0' : '#FF5C3A',
-            fontSize: 13, fontWeight: 700, fontFamily: 'DM Sans, sans-serif',
+            fontSize: 13, fontWeight: 700, fontFamily: "'Inter', sans-serif",
           }}>
             {subscription?.planName || 'Gratis'}
           </span>
           {subscription?.cancelAtPeriodEnd && (
             <span style={{
-              fontSize: 13, color: '#FF9500', fontFamily: 'DM Sans, sans-serif',
+              fontSize: 13, color: '#FF9500', fontFamily: "'Inter', sans-serif",
             }}>
               Se cancela al final del periodo
             </span>
           )}
           {subscription?.expiresAt && !subscription?.cancelAtPeriodEnd && (
             <span style={{
-              fontSize: 13, color: '#7070A0', fontFamily: 'DM Sans, sans-serif',
+              fontSize: 13, color: '#7070A0', fontFamily: "'Inter', sans-serif",
             }}>
               Renueva el {new Date(subscription.expiresAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}
             </span>
@@ -161,15 +161,15 @@ export default function PlanPage() {
               opacity: isLower && !isCurrent ? 0.5 : 1,
               transition: 'transform 0.2s',
             }}
-            onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-            onMouseOut={e => e.currentTarget.style.transform = 'none'}
+              onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+              onMouseOut={e => e.currentTarget.style.transform = 'none'}
             >
               {isRecommended && (
                 <div style={{
                   position: 'absolute', top: -1, left: '50%', transform: 'translateX(-50%) translateY(-50%)',
                   background: 'linear-gradient(135deg, #FF5C3A, #FF7A52)',
                   color: '#fff', fontSize: 11, fontWeight: 700, padding: '3px 14px',
-                  borderRadius: 20, fontFamily: 'DM Sans, sans-serif',
+                  borderRadius: 20, fontFamily: "'Inter', sans-serif",
                 }}>
                   Recomendado
                 </div>
@@ -177,7 +177,7 @@ export default function PlanPage() {
 
               {/* Plan name */}
               <h3 style={{
-                fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 800,
+                fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 800,
                 marginBottom: 8, color: '#fff',
               }}>
                 {plan.name}
@@ -186,14 +186,14 @@ export default function PlanPage() {
               {/* Price */}
               <div style={{ marginBottom: 20 }}>
                 <span style={{
-                  fontFamily: 'Syne, sans-serif', fontSize: 32, fontWeight: 800,
+                  fontFamily: "'Inter', sans-serif", fontSize: 32, fontWeight: 800,
                   color: '#fff',
                 }}>
                   {plan.price === 0 ? 'Gratis' : `$${plan.price}`}
                 </span>
                 {plan.price > 0 && (
                   <span style={{
-                    fontSize: 14, color: '#7070A0', fontFamily: 'DM Sans, sans-serif',
+                    fontSize: 14, color: '#7070A0', fontFamily: "'Inter', sans-serif",
                     marginLeft: 4,
                   }}>
                     /mes
@@ -209,7 +209,7 @@ export default function PlanPage() {
                 {plan.features.map((feature, fi) => (
                   <li key={fi} style={{
                     display: 'flex', alignItems: 'center', gap: 8,
-                    fontSize: 13, color: '#fff', fontFamily: 'DM Sans, sans-serif',
+                    fontSize: 13, color: '#fff', fontFamily: "'Inter', sans-serif",
                     marginBottom: 10,
                   }}>
                     <span style={{ color: '#00E5A0', flexShrink: 0 }}>
@@ -226,7 +226,7 @@ export default function PlanPage() {
                   background: 'rgba(255,255,255,0.05)', color: '#7070A0',
                   cursor: 'default', border: 'none', borderRadius: 12,
                   padding: '12px 28px', fontWeight: 700, fontSize: 14,
-                  fontFamily: 'DM Sans, sans-serif',
+                  fontFamily: "'Inter', sans-serif",
                 }}>
                   Plan actual
                 </button>
@@ -239,7 +239,7 @@ export default function PlanPage() {
                     color: '#fff', border: 'none', borderRadius: 12,
                     padding: '12px 28px', fontWeight: 700, fontSize: 14,
                     cursor: upgrading === planId ? 'wait' : 'pointer',
-                    fontFamily: 'DM Sans, sans-serif',
+                    fontFamily: "'Inter', sans-serif",
                     boxShadow: '0 4px 20px rgba(255,92,58,0.3)',
                     opacity: upgrading === planId ? 0.7 : 1,
                     transition: 'opacity 0.15s',
@@ -252,7 +252,7 @@ export default function PlanPage() {
                   background: 'rgba(255,255,255,0.05)', color: '#7070A0',
                   cursor: 'default', border: 'none', borderRadius: 12,
                   padding: '12px 28px', fontWeight: 700, fontSize: 14,
-                  fontFamily: 'DM Sans, sans-serif',
+                  fontFamily: "'Inter', sans-serif",
                 }}>
                   &mdash;
                 </button>
@@ -268,7 +268,7 @@ export default function PlanPage() {
         borderRadius: 16, padding: 28,
       }}>
         <h3 style={{
-          fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 700,
+          fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 700,
           marginBottom: 16, color: '#fff',
         }}>
           Administrar suscripcion
@@ -281,11 +281,11 @@ export default function PlanPage() {
               background: 'rgba(255,255,255,0.06)', color: '#F0F0FF',
               border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12,
               padding: '12px 24px', fontWeight: 600, fontSize: 14,
-              cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+              cursor: 'pointer', fontFamily: "'Inter', sans-serif",
               transition: 'background 0.15s',
             }}
-            onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-            onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+              onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+              onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
             >
               Administrar facturacion
             </button>
@@ -295,18 +295,18 @@ export default function PlanPage() {
           {currentPlan !== 'free' && !subscription?.cancelAtPeriodEnd && (
             <button onClick={() => setShowCancelConfirm(true)} style={{
               background: 'none', border: 'none', color: '#7070A0',
-              fontSize: 14, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+              fontSize: 14, cursor: 'pointer', fontFamily: "'Inter', sans-serif",
               textDecoration: 'underline', padding: '12px 8px',
             }}
-            onMouseOver={e => e.currentTarget.style.color = '#FF5C3A'}
-            onMouseOut={e => e.currentTarget.style.color = '#7070A0'}
+              onMouseOver={e => e.currentTarget.style.color = '#FF5C3A'}
+              onMouseOut={e => e.currentTarget.style.color = '#7070A0'}
             >
               Cancelar suscripcion
             </button>
           )}
 
           {currentPlan === 'free' && (
-            <p style={{ color: '#7070A0', fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}>
+            <p style={{ color: '#7070A0', fontSize: 14, fontFamily: "'Inter', sans-serif" }}>
               Estas en el plan gratuito. Mejora tu plan para desbloquear mas funciones.
             </p>
           )}
@@ -325,13 +325,13 @@ export default function PlanPage() {
             borderRadius: 20, padding: 32, maxWidth: 420, width: '90%',
           }}>
             <h3 style={{
-              fontFamily: 'Syne, sans-serif', fontSize: 20, fontWeight: 800,
+              fontFamily: "'Inter', sans-serif", fontSize: 20, fontWeight: 800,
               marginBottom: 12, color: '#fff',
             }}>
               Cancelar suscripcion
             </h3>
             <p style={{
-              color: '#7070A0', fontSize: 14, fontFamily: 'DM Sans, sans-serif',
+              color: '#7070A0', fontSize: 14, fontFamily: "'Inter', sans-serif",
               marginBottom: 24, lineHeight: 1.6,
             }}>
               Tu plan seguira activo hasta el final del periodo de facturacion. Despues de eso, tu cuenta se cambiara al plan gratuito con un limite de 10 citas al mes.
@@ -341,7 +341,7 @@ export default function PlanPage() {
                 background: 'rgba(255,255,255,0.06)', color: '#F0F0FF',
                 border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12,
                 padding: '10px 20px', fontWeight: 600, fontSize: 14,
-                cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+                cursor: 'pointer', fontFamily: "'Inter', sans-serif",
               }}>
                 Mantener plan
               </button>
@@ -349,7 +349,7 @@ export default function PlanPage() {
                 background: 'rgba(255,92,58,0.15)', color: '#FF5C3A',
                 border: '1px solid rgba(255,92,58,0.3)', borderRadius: 12,
                 padding: '10px 20px', fontWeight: 600, fontSize: 14,
-                cursor: cancelling ? 'wait' : 'pointer', fontFamily: 'DM Sans, sans-serif',
+                cursor: cancelling ? 'wait' : 'pointer', fontFamily: "'Inter', sans-serif",
                 opacity: cancelling ? 0.7 : 1,
               }}>
                 {cancelling ? 'Cancelando...' : 'Si, cancelar'}

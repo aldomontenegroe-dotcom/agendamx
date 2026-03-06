@@ -56,7 +56,7 @@ export default function RevenuePage() {
     color: '#F0F0FF',
     padding: '8px 12px',
     fontSize: 14,
-    fontFamily: 'DM Sans, sans-serif',
+    fontFamily: "'Inter', sans-serif",
     outline: 'none',
   }
 
@@ -85,7 +85,7 @@ export default function RevenuePage() {
     <div className="fade-up">
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: 26, fontWeight: 800, marginBottom: 4 }}>
+        <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 800, marginBottom: 4 }}>
           Ingresos y <span style={{ color: '#FF5C3A' }}>Analíticas</span>
         </h1>
         <p style={muted}>Resumen de rendimiento del negocio</p>
@@ -120,28 +120,28 @@ export default function RevenuePage() {
             {/* Ingresos totales */}
             <div style={card}>
               <p style={muted}>Ingresos totales</p>
-              <p style={{ fontFamily: 'Syne, sans-serif', fontSize: 26, fontWeight: 800, color: '#00E5A0', marginTop: 8 }}>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 800, color: '#00E5A0', marginTop: 8 }}>
                 {formatMoney(data.totalRevenue)}
               </p>
             </div>
             {/* Total citas */}
             <div style={card}>
               <p style={muted}>Total citas</p>
-              <p style={{ fontFamily: 'Syne, sans-serif', fontSize: 26, fontWeight: 800, color: '#FF5C3A', marginTop: 8 }}>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 800, color: '#FF5C3A', marginTop: 8 }}>
                 {data.totalAppointments}
               </p>
             </div>
             {/* Ticket promedio */}
             <div style={card}>
               <p style={muted}>Ticket promedio</p>
-              <p style={{ fontFamily: 'Syne, sans-serif', fontSize: 26, fontWeight: 800, color: '#F0F0FF', marginTop: 8 }}>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 800, color: '#F0F0FF', marginTop: 8 }}>
                 {formatMoney(ticketPromedio)}
               </p>
             </div>
             {/* Clientes nuevos */}
             <div style={card}>
               <p style={muted}>Clientes nuevos</p>
-              <p style={{ fontFamily: 'Syne, sans-serif', fontSize: 26, fontWeight: 800, color: '#8B5CF6', marginTop: 8 }}>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 800, color: '#8B5CF6', marginTop: 8 }}>
                 {data.newClients}
               </p>
             </div>
@@ -153,7 +153,7 @@ export default function RevenuePage() {
             marginBottom: 28,
             padding: '24px',
           }}>
-            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 700, marginBottom: 20 }}>
+            <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 700, marginBottom: 20 }}>
               Ingresos diarios
             </h2>
 
@@ -204,7 +204,7 @@ export default function RevenuePage() {
                         fontSize: 10,
                         color: '#7070A0',
                         marginTop: 6,
-                        fontFamily: 'DM Sans, sans-serif',
+                        fontFamily: "'Inter', sans-serif",
                       }}>
                         {dayLabel}
                       </span>
@@ -219,11 +219,11 @@ export default function RevenuePage() {
           {data.topServices && data.topServices.length > 0 && (
             <div className="fade-up delay-200" style={{ ...card, marginBottom: 28, padding: 0, overflow: 'hidden' }}>
               <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 700 }}>
+                <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 700 }}>
                   Servicios más solicitados
                 </h2>
               </div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'DM Sans, sans-serif' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: "'Inter', sans-serif" }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                     {['#', 'Servicio', 'Citas', 'Ingresos'].map((h, i) => (
@@ -247,8 +247,8 @@ export default function RevenuePage() {
                       borderBottom: i < data.topServices.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
                       transition: 'background 0.15s',
                     }}
-                    onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
-                    onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
+                      onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+                      onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
                     >
                       <td style={{ padding: '14px 24px', color: '#7070A0', fontSize: 14 }}>{i + 1}</td>
                       <td style={{ padding: '14px 24px', fontSize: 14, fontWeight: 500, color: '#F0F0FF' }}>{svc.name}</td>
@@ -267,13 +267,13 @@ export default function RevenuePage() {
           <div className="fade-up delay-200" style={{ ...card, display: 'flex', alignItems: 'center', gap: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#00E5A0' }} />
-              <span style={{ fontSize: 14, color: '#F0F0FF', fontFamily: 'DM Sans, sans-serif' }}>
+              <span style={{ fontSize: 14, color: '#F0F0FF', fontFamily: "'Inter', sans-serif" }}>
                 <strong>{data.completedAppointments}</strong> completadas
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#FF5C3A' }} />
-              <span style={{ fontSize: 14, color: '#F0F0FF', fontFamily: 'DM Sans, sans-serif' }}>
+              <span style={{ fontSize: 14, color: '#F0F0FF', fontFamily: "'Inter', sans-serif" }}>
                 <strong>{data.cancelledAppointments}</strong> canceladas
               </span>
             </div>

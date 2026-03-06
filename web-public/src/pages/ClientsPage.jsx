@@ -43,22 +43,22 @@ const IconNote = () => (
 
 const statusConfig = {
   confirmed: { label: 'Confirmada', color: '#00E5A0', bg: 'rgba(0,229,160,0.1)' },
-  pending:   { label: 'Pendiente',  color: '#FF9500', bg: 'rgba(255,149,0,0.1)' },
+  pending: { label: 'Pendiente', color: '#FF9500', bg: 'rgba(255,149,0,0.1)' },
   completed: { label: 'Completada', color: '#7070A0', bg: 'rgba(112,112,160,0.1)' },
-  cancelled: { label: 'Cancelada',  color: '#FF5C3A', bg: 'rgba(255,92,58,0.1)' },
+  cancelled: { label: 'Cancelada', color: '#FF5C3A', bg: 'rgba(255,92,58,0.1)' },
 }
 
 const eventTypeConfig = {
-  booked:       { label: 'Cita agendada',       icon: '\uD83D\uDCC5', color: '#00E5A0' },
-  confirmed:    { label: 'Cita confirmada',      icon: '\u2705', color: '#00E5A0' },
-  cancelled:    { label: 'Cita cancelada',       icon: '\u274C', color: '#FF5C3A' },
-  completed:    { label: 'Cita completada',      icon: '\uD83C\uDF89', color: '#7070A0' },
-  no_show:      { label: 'No se present\u00f3',  icon: '\uD83D\uDC7B', color: '#FF9500' },
-  rescheduled:  { label: 'Cita reagendada',      icon: '\uD83D\uDD04', color: '#FF9500' },
-  reminder_24h: { label: 'Recordatorio 24h',     icon: '\u23F0', color: '#7070A0' },
-  reminder_1h:  { label: 'Recordatorio 1h',      icon: '\uD83D\uDD14', color: '#7070A0' },
-  followup:     { label: 'Follow-up enviado',    icon: '\u2B50', color: '#7070A0' },
-  note_updated: { label: 'Notas actualizadas',   icon: '\uD83D\uDCDD', color: '#7070A0' },
+  booked: { label: 'Cita agendada', icon: '\uD83D\uDCC5', color: '#00E5A0' },
+  confirmed: { label: 'Cita confirmada', icon: '\u2705', color: '#00E5A0' },
+  cancelled: { label: 'Cita cancelada', icon: '\u274C', color: '#FF5C3A' },
+  completed: { label: 'Cita completada', icon: '\uD83C\uDF89', color: '#7070A0' },
+  no_show: { label: 'No se present\u00f3', icon: '\uD83D\uDC7B', color: '#FF9500' },
+  rescheduled: { label: 'Cita reagendada', icon: '\uD83D\uDD04', color: '#FF9500' },
+  reminder_24h: { label: 'Recordatorio 24h', icon: '\u23F0', color: '#7070A0' },
+  reminder_1h: { label: 'Recordatorio 1h', icon: '\uD83D\uDD14', color: '#7070A0' },
+  followup: { label: 'Follow-up enviado', icon: '\u2B50', color: '#7070A0' },
+  note_updated: { label: 'Notas actualizadas', icon: '\uD83D\uDCDD', color: '#7070A0' },
 }
 
 const channelLabels = { web: 'Web', whatsapp: 'WhatsApp', admin: 'Admin', system: 'Sistema' }
@@ -201,7 +201,7 @@ export default function ClientsPage() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: 26, fontWeight: 800, color: '#F0F0FF', marginBottom: 4 }}>
+          <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 800, color: '#F0F0FF', marginBottom: 4 }}>
             Clientes
           </h1>
           <p style={{ color: '#7070A0', fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}>
@@ -292,7 +292,7 @@ export default function ClientsPage() {
                       fontWeight: 700,
                       color: isSelected ? '#fff' : '#FF8C42',
                       border: `1px solid ${isSelected ? 'rgba(255,92,58,0.4)' : 'rgba(255,92,58,0.15)'}`,
-                      fontFamily: 'Syne, sans-serif',
+                      fontFamily: "'Inter', sans-serif",
                     }}>
                       {getInitials(c.name)}
                     </div>
@@ -394,13 +394,13 @@ export default function ClientsPage() {
                         fontSize: 18,
                         fontWeight: 700,
                         color: '#fff',
-                        fontFamily: 'Syne, sans-serif',
+                        fontFamily: "'Inter', sans-serif",
                         boxShadow: '0 4px 20px rgba(255,92,58,0.3)',
                       }}>
                         {getInitials(client.name)}
                       </div>
                       <div>
-                        <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 20, fontWeight: 800, color: '#F0F0FF' }}>
+                        <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 20, fontWeight: 800, color: '#F0F0FF' }}>
                           {client.name}
                         </h2>
                         <p style={{ fontSize: 12, color: '#7070A0', fontFamily: 'DM Sans, sans-serif', marginTop: 2 }}>
@@ -546,7 +546,7 @@ export default function ClientsPage() {
                           border: 'none',
                           borderBottom: activeTab === tab.id ? '2px solid #FF5C3A' : '2px solid transparent',
                           color: activeTab === tab.id ? '#F0F0FF' : '#7070A0',
-                          fontFamily: 'Syne, sans-serif',
+                          fontFamily: "'Inter', sans-serif",
                           fontSize: 13,
                           fontWeight: activeTab === tab.id ? 700 : 500,
                           cursor: 'pointer',
@@ -643,7 +643,7 @@ export default function ClientsPage() {
                                   {st.label}
                                 </div>
                                 {appt.price != null && (
-                                  <span style={{ fontFamily: 'Syne, sans-serif', fontSize: 14, fontWeight: 700, color: '#F0F0FF', minWidth: 56, textAlign: 'right' }}>
+                                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 700, color: '#F0F0FF', minWidth: 56, textAlign: 'right' }}>
                                     ${appt.price}
                                   </span>
                                 )}

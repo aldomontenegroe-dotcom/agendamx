@@ -38,7 +38,7 @@ const inputStyle = {
   color: '#F0F0FF',
   padding: '10px 14px',
   fontSize: 14,
-  fontFamily: 'DM Sans, sans-serif',
+  fontFamily: "'Inter', sans-serif",
   outline: 'none',
   boxSizing: 'border-box',
   transition: 'border-color 0.2s',
@@ -50,7 +50,7 @@ const labelStyle = {
   color: '#7070A0',
   marginBottom: 6,
   display: 'block',
-  fontFamily: 'DM Sans, sans-serif',
+  fontFamily: "'Inter', sans-serif",
 }
 
 function getInitials(name) {
@@ -166,7 +166,7 @@ export default function StaffPage() {
           margin: '0 auto 16px', animation: 'spin 0.8s linear infinite',
         }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-        <p style={{ color: '#7070A0', fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}>Cargando equipo...</p>
+        <p style={{ color: '#7070A0', fontSize: 14, fontFamily: "'Inter', sans-serif" }}>Cargando equipo...</p>
       </div>
     )
   }
@@ -174,13 +174,13 @@ export default function StaffPage() {
   if (error) {
     return (
       <div style={{ padding: '80px 0', textAlign: 'center' }}>
-        <p style={{ color: '#FF5C3A', fontSize: 14, marginBottom: 12, fontFamily: 'DM Sans, sans-serif' }}>{error}</p>
+        <p style={{ color: '#FF5C3A', fontSize: 14, marginBottom: 12, fontFamily: "'Inter', sans-serif" }}>{error}</p>
         <button
           onClick={fetchStaff}
           style={{
             padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(255,92,58,0.3)',
             background: 'rgba(255,92,58,0.1)', color: '#FF5C3A', cursor: 'pointer',
-            fontSize: 13, fontFamily: 'DM Sans, sans-serif',
+            fontSize: 13, fontFamily: "'Inter', sans-serif",
           }}
         >
           Reintentar
@@ -194,10 +194,10 @@ export default function StaffPage() {
       {/* Header */}
       <div className="fade-up" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
         <div>
-          <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: 26, fontWeight: 800, color: '#F0F0FF', marginBottom: 4 }}>
+          <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 800, color: '#F0F0FF', marginBottom: 4 }}>
             Equipo
           </h1>
-          <p style={{ color: '#7070A0', fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}>
+          <p style={{ color: '#7070A0', fontSize: 14, fontFamily: "'Inter', sans-serif" }}>
             {staff.length} miembro{staff.length !== 1 ? 's' : ''} registrado{staff.length !== 1 ? 's' : ''}
           </p>
         </div>
@@ -208,7 +208,7 @@ export default function StaffPage() {
             padding: '10px 20px', borderRadius: 10, border: 'none',
             background: 'linear-gradient(135deg, #FF5C3A, #FF7A52)',
             color: 'white', cursor: 'pointer', fontSize: 14, fontWeight: 600,
-            fontFamily: 'DM Sans, sans-serif',
+            fontFamily: "'Inter', sans-serif",
             boxShadow: '0 4px 20px rgba(255,92,58,0.3)',
             transition: 'transform 0.15s, box-shadow 0.15s',
           }}
@@ -228,10 +228,10 @@ export default function StaffPage() {
             borderRadius: 16, padding: '48px 24px', textAlign: 'center',
           }}>
             <p style={{ fontSize: 32, marginBottom: 12 }}>👥</p>
-            <p style={{ color: '#7070A0', fontSize: 14, fontFamily: 'DM Sans, sans-serif', marginBottom: 4 }}>
+            <p style={{ color: '#7070A0', fontSize: 14, fontFamily: "'Inter', sans-serif", marginBottom: 4 }}>
               No hay miembros registrados
             </p>
-            <p style={{ color: '#50506A', fontSize: 13, fontFamily: 'DM Sans, sans-serif' }}>
+            <p style={{ color: '#50506A', fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
               Agrega a tu primer miembro del equipo
             </p>
           </div>
@@ -272,7 +272,7 @@ export default function StaffPage() {
                 }}>
                   <span style={{
                     color: 'white', fontSize: 16, fontWeight: 700,
-                    fontFamily: 'Syne, sans-serif', letterSpacing: '0.02em',
+                    fontFamily: "'Inter', sans-serif", letterSpacing: '0.02em',
                   }}>
                     {getInitials(member.name)}
                   </span>
@@ -283,7 +283,7 @@ export default function StaffPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
                     <p style={{
                       fontSize: 15, fontWeight: 700, color: '#F0F0FF',
-                      fontFamily: 'DM Sans, sans-serif',
+                      fontFamily: "'Inter', sans-serif",
                       whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                     }}>
                       {member.name}
@@ -292,7 +292,7 @@ export default function StaffPage() {
                       fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
                       letterSpacing: '0.06em',
                       padding: '3px 10px', borderRadius: 20,
-                      fontFamily: 'DM Sans, sans-serif',
+                      fontFamily: "'Inter', sans-serif",
                       background: isOwner ? 'rgba(0,229,160,0.12)' : 'rgba(59,130,246,0.12)',
                       color: isOwner ? '#00E5A0' : '#3B82F6',
                       flexShrink: 0,
@@ -302,12 +302,12 @@ export default function StaffPage() {
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
                     {member.email && (
-                      <p style={{ fontSize: 13, color: '#7070A0', fontFamily: 'DM Sans, sans-serif' }}>
+                      <p style={{ fontSize: 13, color: '#7070A0', fontFamily: "'Inter', sans-serif" }}>
                         {member.email}
                       </p>
                     )}
                     {member.phone && (
-                      <p style={{ fontSize: 13, color: '#7070A0', fontFamily: 'DM Sans, sans-serif' }}>
+                      <p style={{ fontSize: 13, color: '#7070A0', fontFamily: "'Inter', sans-serif" }}>
                         {member.phone}
                       </p>
                     )}
@@ -319,7 +319,7 @@ export default function StaffPage() {
                   <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                     {isConfirmingDelete ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: 12, color: '#FF5C3A', fontFamily: 'DM Sans, sans-serif', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: 12, color: '#FF5C3A', fontFamily: "'Inter', sans-serif", whiteSpace: 'nowrap' }}>
                           Confirmar?
                         </span>
                         <button
@@ -328,7 +328,7 @@ export default function StaffPage() {
                             padding: '6px 14px', borderRadius: 8, border: 'none',
                             background: 'rgba(255,92,58,0.15)', color: '#FF5C3A',
                             cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                            fontFamily: 'DM Sans, sans-serif',
+                            fontFamily: "'Inter', sans-serif",
                             transition: 'all 0.15s',
                           }}
                           onMouseOver={e => e.currentTarget.style.background = 'rgba(255,92,58,0.25)'}
@@ -342,7 +342,7 @@ export default function StaffPage() {
                             padding: '6px 14px', borderRadius: 8, border: 'none',
                             background: 'rgba(255,255,255,0.06)', color: '#7070A0',
                             cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                            fontFamily: 'DM Sans, sans-serif',
+                            fontFamily: "'Inter', sans-serif",
                             transition: 'all 0.15s',
                           }}
                           onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#F0F0FF' }}
@@ -423,7 +423,7 @@ export default function StaffPage() {
           >
             {/* Modal Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
-              <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 20, fontWeight: 800, color: '#F0F0FF' }}>
+              <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 20, fontWeight: 800, color: '#F0F0FF' }}>
                 {editingMember ? 'Editar miembro' : 'Nuevo miembro'}
               </h2>
               <button
@@ -500,7 +500,7 @@ export default function StaffPage() {
                     border: '1px solid rgba(255,255,255,0.1)',
                     background: 'rgba(255,255,255,0.04)', color: '#7070A0',
                     cursor: 'pointer', fontSize: 14, fontWeight: 600,
-                    fontFamily: 'DM Sans, sans-serif',
+                    fontFamily: "'Inter', sans-serif",
                     transition: 'all 0.15s',
                   }}
                   onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#F0F0FF' }}
@@ -515,7 +515,7 @@ export default function StaffPage() {
                     flex: 1, padding: '12px 20px', borderRadius: 10, border: 'none',
                     background: saving ? 'rgba(255,92,58,0.3)' : 'linear-gradient(135deg, #FF5C3A, #FF7A52)',
                     color: 'white', cursor: saving ? 'not-allowed' : 'pointer',
-                    fontSize: 14, fontWeight: 600, fontFamily: 'DM Sans, sans-serif',
+                    fontSize: 14, fontWeight: 600, fontFamily: "'Inter', sans-serif",
                     boxShadow: saving ? 'none' : '0 4px 20px rgba(255,92,58,0.3)',
                     transition: 'all 0.15s',
                   }}

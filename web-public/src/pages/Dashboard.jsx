@@ -1,4 +1,22 @@
 import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  CalendarDays,
+  Users,
+  CircleDollarSign,
+  Bell,
+  Settings,
+  CreditCard,
+  Briefcase,
+  UserPlus,
+  TrendingUp,
+  Check,
+  X,
+  LogOut,
+  CalendarCheck,
+  Sparkles,
+  Hourglass
+} from 'lucide-react'
 import { apiFetch } from '../utils/api'
 import RevenuePage from './RevenuePage'
 import ServicesPage from './ServicesPage'
@@ -8,40 +26,28 @@ import SettingsPage from './SettingsPage'
 import PlanPage from './PlanPage'
 import StaffPage from './StaffPage'
 
-const IconCalendar  = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-const IconUsers     = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-const IconDollar    = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-const IconBell      = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-const IconSettings  = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 0 0 4.93 19.07"/><path d="M4.93 4.93A10 10 0 0 1 19.07 19.07"/><path d="m12 2 .5 3"/><path d="m12 22-.5-3"/><path d="m2 12 3-.5"/><path d="m22 12-3 .5"/><path d="m4.93 4.93 2.12 2.12"/><path d="m16.95 16.95 2.12 2.12"/><path d="m4.93 19.07 2.12-2.12"/><path d="m16.95 7.05 2.12-2.12"/></svg>
-const IconPlan      = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-const IconCheck     = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-const IconX         = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-const IconTrend     = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-const IconServices  = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-const IconTeam      = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-
 const navItems = [
-  { id: 'dashboard',  label: 'Dashboard',  icon: <IconCalendar /> },
-  { id: 'servicios',  label: 'Servicios',  icon: <IconServices /> },
-  { id: 'citas',      label: 'Citas',      icon: <IconCalendar /> },
-  { id: 'clientes',   label: 'Clientes',   icon: <IconUsers /> },
-  { id: 'equipo',     label: 'Equipo',     icon: <IconTeam /> },
-  { id: 'ingresos',   label: 'Ingresos',   icon: <IconDollar /> },
-  { id: 'plan',       label: 'Plan',       icon: <IconPlan /> },
-  { id: 'ajustes',    label: 'Ajustes',    icon: <IconSettings /> },
+  { id: 'dashboard', label: 'Dashboard', icon: <CalendarDays size={20} /> },
+  { id: 'servicios', label: 'Servicios', icon: <Briefcase size={20} /> },
+  { id: 'citas', label: 'Citas', icon: <CalendarDays size={20} /> },
+  { id: 'clientes', label: 'Clientes', icon: <Users size={20} /> },
+  { id: 'equipo', label: 'Equipo', icon: <UserPlus size={20} /> },
+  { id: 'ingresos', label: 'Ingresos', icon: <CircleDollarSign size={20} /> },
+  { id: 'plan', label: 'Plan', icon: <CreditCard size={20} /> },
+  { id: 'ajustes', label: 'Ajustes', icon: <Settings size={20} /> },
 ]
 
 const statusConfig = {
   confirmed: { label: 'Confirmada', color: '#00E5A0', bg: 'rgba(0,229,160,0.1)' },
-  pending:   { label: 'Pendiente',  color: '#FF9500', bg: 'rgba(255,149,0,0.1)' },
+  pending: { label: 'Pendiente', color: '#FF9500', bg: 'rgba(255,149,0,0.1)' },
   completed: { label: 'Completada', color: '#7070A0', bg: 'rgba(112,112,160,0.1)' },
-  cancelled: { label: 'Cancelada',  color: '#FF5C3A', bg: 'rgba(255,92,58,0.1)' },
+  cancelled: { label: 'Cancelada', color: '#FF5C3A', bg: 'rgba(255,92,58,0.1)' },
 }
 
 function PlaceholderPage({ title }) {
   return (
     <div style={{ padding: '40px 0' }}>
-      <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 24, fontWeight: 800, marginBottom: 8 }}>{title}</h2>
+      <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, fontWeight: 800, marginBottom: 8 }}>{title}</h2>
       <p style={{ color: '#7070A0', fontSize: 14 }}>Proximamente...</p>
     </div>
   )
@@ -127,7 +133,7 @@ function DashboardHome({ user, onNavigate }) {
           style={{
             padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(255,92,58,0.3)',
             background: 'rgba(255,92,58,0.1)', color: '#FF5C3A', cursor: 'pointer',
-            fontSize: 13, fontFamily: 'DM Sans, sans-serif',
+            fontSize: 13, fontFamily: "'Inter', sans-serif",
           }}
         >
           Reintentar
@@ -141,7 +147,7 @@ function DashboardHome({ user, onNavigate }) {
       {/* Header */}
       <div className="fade-up" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
         <div>
-          <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: 26, fontWeight: 800, marginBottom: 4 }}>
+          <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 800, marginBottom: 4 }}>
             {greeting}, <span style={{ color: '#FF5C3A' }}>{user.name}</span>
           </h1>
           <p style={{ color: '#7070A0', fontSize: 14 }}>{capitalizedDate} · {citasHoy} citas hoy</p>
@@ -151,9 +157,9 @@ function DashboardHome({ user, onNavigate }) {
             padding: '10px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)',
             background: 'rgba(255,255,255,0.04)', color: '#F0F0FF', cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 6, fontSize: 14,
-            fontFamily: 'DM Sans, sans-serif',
+            fontFamily: "'Inter', sans-serif",
           }}>
-            <IconBell /> <span style={{ position: 'relative' }}>Notificaciones
+            <Bell size={18} /> <span style={{ position: 'relative' }}>Notificaciones
               <span style={{
                 position: 'absolute', top: -8, right: -20,
                 background: '#FF5C3A', color: 'white', fontSize: 10, fontWeight: 700,
@@ -168,7 +174,7 @@ function DashboardHome({ user, onNavigate }) {
               padding: '10px 18px', borderRadius: 10, border: 'none',
               background: 'linear-gradient(135deg, #FF5C3A, #FF7A52)',
               color: 'white', cursor: 'pointer', fontSize: 14, fontWeight: 600,
-              fontFamily: 'DM Sans, sans-serif',
+              fontFamily: "'Inter', sans-serif",
               boxShadow: '0 4px 20px rgba(255,92,58,0.3)',
             }}>
             + Nueva cita
@@ -179,26 +185,26 @@ function DashboardHome({ user, onNavigate }) {
       {/* Stats cards */}
       <div className="fade-up delay-100" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
         {[
-          { label: 'Citas hoy',       value: citasHoy, sub: `${confirmadas} confirmadas`, icon: '\uD83D\uDCC5', color: '#FF5C3A' },
-          { label: 'Ingresos del dia', value: `$${totalHoy.toLocaleString()}`, sub: 'del dia', icon: '\uD83D\uDCB0', color: '#00E5A0' },
-          { label: 'Pendientes',       value: pendientes, sub: 'Por confirmar', icon: '\u23F3', color: '#FF9500' },
-          { label: 'Clientes nuevos',  value: clientesNuevos, sub: 'Esta semana', icon: '\u2728', color: '#8B5CF6' },
+          { label: 'Citas hoy', value: citasHoy, sub: `${confirmadas} confirmadas`, icon: <CalendarCheck size={24} />, color: '#FF5C3A' },
+          { label: 'Ingresos del dia', value: `$${totalHoy.toLocaleString()}`, sub: 'del dia', icon: <CircleDollarSign size={24} />, color: '#00E5A0' },
+          { label: 'Pendientes', value: pendientes, sub: 'Por confirmar', icon: <Hourglass size={24} />, color: '#FF9500' },
+          { label: 'Clientes nuevos', value: clientesNuevos, sub: 'Esta semana', icon: <Sparkles size={24} />, color: '#8B5CF6' },
         ].map((stat, i) => (
           <div key={i} style={{
             background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
             borderRadius: 16, padding: '20px',
             transition: 'transform 0.2s',
           }}
-          onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-          onMouseOut={e => e.currentTarget.style.transform = 'none'}
+            onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+            onMouseOut={e => e.currentTarget.style.transform = 'none'}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-              <span style={{ fontSize: 22 }}>{stat.icon}</span>
+              <span style={{ fontSize: 22, display: 'flex' }}>{stat.icon}</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#00E5A0', fontSize: 12 }}>
-                <IconTrend /> <span>{stat.sub}</span>
+                <TrendingUp size={14} /> <span>{stat.sub}</span>
               </div>
             </div>
-            <p style={{ fontFamily: 'Syne, sans-serif', fontSize: 28, fontWeight: 800, color: stat.color }}>{stat.value}</p>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, fontWeight: 800, color: stat.color }}>{stat.value}</p>
             <p style={{ color: '#7070A0', fontSize: 13, marginTop: 2 }}>{stat.label}</p>
           </div>
         ))}
@@ -213,7 +219,7 @@ function DashboardHome({ user, onNavigate }) {
           padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
-          <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 700 }}>Agenda de hoy</h2>
+          <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 700 }}>Agenda de hoy</h2>
           <span style={{ fontSize: 13, color: '#7070A0' }}>{capitalizedDate}</span>
         </div>
 
@@ -246,7 +252,7 @@ function DashboardHome({ user, onNavigate }) {
                   onMouseOut={e => !isSelected && (e.currentTarget.style.background = 'transparent')}
                 >
                   {/* Hora */}
-                  <span style={{ fontFamily: 'Syne, sans-serif', fontSize: 14, fontWeight: 700, color: '#FF5C3A', minWidth: 44 }}>
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 700, color: '#FF5C3A', minWidth: 44 }}>
                     {time}
                   </span>
 
@@ -276,7 +282,7 @@ function DashboardHome({ user, onNavigate }) {
                   </div>
 
                   {/* Precio */}
-                  <span style={{ fontFamily: 'Syne, sans-serif', fontSize: 15, fontWeight: 700, minWidth: 72, textAlign: 'right' }}>
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, fontWeight: 700, minWidth: 72, textAlign: 'right' }}>
                     ${price}
                   </span>
 
@@ -289,7 +295,7 @@ function DashboardHome({ user, onNavigate }) {
                         background: 'rgba(0,229,160,0.15)', color: '#00E5A0', cursor: 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }} title="Confirmar">
-                      <IconCheck />
+                      <Check size={18} />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleStatusChange(appt.id, 'cancelled') }}
@@ -298,7 +304,7 @@ function DashboardHome({ user, onNavigate }) {
                         background: 'rgba(255,92,58,0.15)', color: '#FF5C3A', cursor: 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }} title="Cancelar">
-                      <IconX />
+                      <X size={18} />
                     </button>
                   </div>
                 </div>
@@ -335,9 +341,9 @@ export default function Dashboard({ user, onLogout }) {
             color: 'white', boxShadow: '0 4px 16px rgba(255,92,58,0.35)',
             flexShrink: 0,
           }}>
-            <IconCalendar />
+            <CalendarDays size={20} />
           </div>
-          <span style={{ fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 700 }}>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 700 }}>
             agenda<span style={{ color: '#FF5C3A' }}>MX</span>
           </span>
         </div>
@@ -351,7 +357,7 @@ export default function Dashboard({ user, onLogout }) {
                 padding: '11px 12px', borderRadius: 10, border: 'none',
                 background: activeNav === item.id ? 'rgba(255,92,58,0.12)' : 'transparent',
                 color: activeNav === item.id ? '#FF5C3A' : '#7070A0',
-                cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+                cursor: 'pointer', fontFamily: "'Inter', sans-serif",
                 fontSize: 14, fontWeight: activeNav === item.id ? 600 : 400,
                 textAlign: 'left', transition: 'all 0.15s',
                 boxShadow: activeNav === item.id ? 'inset 0 0 0 1px rgba(255,92,58,0.2)' : 'none',
@@ -390,7 +396,7 @@ export default function Dashboard({ user, onLogout }) {
               width: '100%', padding: '8px 0', borderRadius: 8,
               border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)',
               cursor: 'pointer', color: '#7070A0', fontSize: 12, fontWeight: 500,
-              fontFamily: 'DM Sans, sans-serif', transition: 'all 0.15s',
+              fontFamily: "'Inter', sans-serif", transition: 'all 0.15s',
             }}
             onMouseOver={e => { e.currentTarget.style.color = '#FF5C3A'; e.currentTarget.style.borderColor = 'rgba(255,92,58,0.2)' }}
             onMouseOut={e => { e.currentTarget.style.color = '#7070A0'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
@@ -401,8 +407,8 @@ export default function Dashboard({ user, onLogout }) {
 
         {/* Footer */}
         <div style={{ textAlign: 'center', paddingTop: 12 }}>
-          <a href="https://popservices.tech" target="_blank" rel="noreferrer"
-            style={{ fontSize: 10, color: '#50506A', textDecoration: 'none', fontFamily: 'DM Sans, sans-serif', transition: 'color 0.15s' }}
+          <a href="https://www.popservices.net" target="_blank" rel="noreferrer"
+            style={{ fontSize: 10, color: '#50506A', textDecoration: 'none', fontFamily: "'Inter', sans-serif", transition: 'color 0.15s' }}
             onMouseOver={e => e.currentTarget.style.color = '#7070A0'}
             onMouseOut={e => e.currentTarget.style.color = '#50506A'}
           >
@@ -413,14 +419,25 @@ export default function Dashboard({ user, onLogout }) {
 
       {/* -- Contenido principal -- */}
       <main style={{ flex: 1, padding: '32px 36px', position: 'relative', zIndex: 1, overflow: 'auto' }}>
-        {activeNav === 'dashboard' && <DashboardHome user={user} onNavigate={setActiveNav} />}
-        {activeNav === 'servicios' && <ServicesPage />}
-        {activeNav === 'citas' && <AppointmentsPage />}
-        {activeNav === 'clientes' && <ClientsPage />}
-        {activeNav === 'equipo' && <StaffPage />}
-        {activeNav === 'ingresos' && <RevenuePage />}
-        {activeNav === 'plan' && <PlanPage />}
-        {activeNav === 'ajustes' && <SettingsPage />}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeNav}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            style={{ width: '100%', minHeight: '100%' }}
+          >
+            {activeNav === 'dashboard' && <DashboardHome user={user} onNavigate={setActiveNav} />}
+            {activeNav === 'servicios' && <ServicesPage />}
+            {activeNav === 'citas' && <AppointmentsPage />}
+            {activeNav === 'clientes' && <ClientsPage />}
+            {activeNav === 'equipo' && <StaffPage />}
+            {activeNav === 'ingresos' && <RevenuePage />}
+            {activeNav === 'plan' && <PlanPage />}
+            {activeNav === 'ajustes' && <SettingsPage />}
+          </motion.div>
+        </AnimatePresence>
       </main>
     </div>
   )

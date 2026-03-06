@@ -42,15 +42,15 @@ const IconPlus = () => (
 
 const statusConfig = {
   confirmed: { label: 'Confirmada', color: '#00E5A0', bg: 'rgba(0,229,160,0.1)' },
-  pending:   { label: 'Pendiente',  color: '#FF9500', bg: 'rgba(255,149,0,0.1)' },
+  pending: { label: 'Pendiente', color: '#FF9500', bg: 'rgba(255,149,0,0.1)' },
   completed: { label: 'Completada', color: '#7070A0', bg: 'rgba(112,112,160,0.1)' },
-  cancelled: { label: 'Cancelada',  color: '#FF5C3A', bg: 'rgba(255,92,58,0.1)' },
-  no_show:   { label: 'No asistió', color: '#8B5CF6', bg: 'rgba(139,92,246,0.1)' },
+  cancelled: { label: 'Cancelada', color: '#FF5C3A', bg: 'rgba(255,92,58,0.1)' },
+  no_show: { label: 'No asistió', color: '#8B5CF6', bg: 'rgba(139,92,246,0.1)' },
 }
 
 const filterButtons = [
-  { key: '',          label: 'Todas' },
-  { key: 'pending',   label: 'Pendientes' },
+  { key: '', label: 'Todas' },
+  { key: 'pending', label: 'Pendientes' },
   { key: 'confirmed', label: 'Confirmadas' },
   { key: 'completed', label: 'Completadas' },
   { key: 'cancelled', label: 'Canceladas' },
@@ -64,7 +64,7 @@ const inputStyle = {
   color: '#F0F0FF',
   padding: '10px 14px',
   fontSize: 14,
-  fontFamily: 'DM Sans, sans-serif',
+  fontFamily: "'Inter', sans-serif",
   outline: 'none',
   boxSizing: 'border-box',
   transition: 'border-color 0.2s',
@@ -76,7 +76,7 @@ const labelStyle = {
   color: '#7070A0',
   marginBottom: 6,
   display: 'block',
-  fontFamily: 'DM Sans, sans-serif',
+  fontFamily: "'Inter', sans-serif",
 }
 
 function getTodayStr() {
@@ -149,7 +149,7 @@ export default function AppointmentsPage() {
         const list = Array.isArray(data) ? data : (data.services || [])
         setServices(list.filter(s => s.is_active !== false))
       })
-      .catch(() => {})
+      .catch(() => { })
   }
 
   useEffect(() => {
@@ -234,7 +234,7 @@ export default function AppointmentsPage() {
           margin: '0 auto 16px', animation: 'spin 0.8s linear infinite',
         }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-        <p style={{ color: '#7070A0', fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}>Cargando citas...</p>
+        <p style={{ color: '#7070A0', fontSize: 14, fontFamily: "'Inter', sans-serif" }}>Cargando citas...</p>
       </div>
     )
   }
@@ -242,13 +242,13 @@ export default function AppointmentsPage() {
   if (error && appointments.length === 0) {
     return (
       <div style={{ padding: '80px 0', textAlign: 'center' }}>
-        <p style={{ color: '#FF5C3A', fontSize: 14, marginBottom: 12, fontFamily: 'DM Sans, sans-serif' }}>{error}</p>
+        <p style={{ color: '#FF5C3A', fontSize: 14, marginBottom: 12, fontFamily: "'Inter', sans-serif" }}>{error}</p>
         <button
           onClick={fetchAppointments}
           style={{
             padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(255,92,58,0.3)',
             background: 'rgba(255,92,58,0.1)', color: '#FF5C3A', cursor: 'pointer',
-            fontSize: 13, fontFamily: 'DM Sans, sans-serif',
+            fontSize: 13, fontFamily: "'Inter', sans-serif",
           }}
         >
           Reintentar
@@ -262,10 +262,10 @@ export default function AppointmentsPage() {
       {/* Header */}
       <div className="fade-up" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: 26, fontWeight: 800, color: '#F0F0FF', marginBottom: 4 }}>
+          <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 800, color: '#F0F0FF', marginBottom: 4 }}>
             Citas
           </h1>
-          <p style={{ color: '#7070A0', fontSize: 14, fontFamily: 'DM Sans, sans-serif' }}>
+          <p style={{ color: '#7070A0', fontSize: 14, fontFamily: "'Inter', sans-serif" }}>
             {appointments.length} cita{appointments.length !== 1 ? 's' : ''} {statusFilter ? `(${filterButtons.find(f => f.key === statusFilter)?.label || statusFilter})` : ''} {statusFilter !== 'pending' && <>&middot; {dateDisplay}</>}
           </p>
         </div>
@@ -276,7 +276,7 @@ export default function AppointmentsPage() {
             padding: '10px 20px', borderRadius: 10, border: 'none',
             background: 'linear-gradient(135deg, #FF5C3A, #FF7A52)',
             color: 'white', cursor: 'pointer', fontSize: 14, fontWeight: 600,
-            fontFamily: 'DM Sans, sans-serif',
+            fontFamily: "'Inter', sans-serif",
             boxShadow: '0 4px 20px rgba(255,92,58,0.3)',
             transition: 'transform 0.15s, box-shadow 0.15s',
           }}
@@ -291,39 +291,39 @@ export default function AppointmentsPage() {
       <div className="fade-up delay-100" style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
         {/* Date (hidden when Pendientes filter is active) */}
         {statusFilter !== 'pending' && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={e => setSelectedDate(e.target.value)}
-            style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 10,
-              color: '#F0F0FF',
-              padding: '9px 14px',
-              fontSize: 14,
-              fontFamily: 'DM Sans, sans-serif',
-              outline: 'none',
-              cursor: 'pointer',
-              colorScheme: 'dark',
-            }}
-          />
-          <button
-            onClick={() => setSelectedDate(getTodayStr())}
-            style={{
-              padding: '9px 16px', borderRadius: 10,
-              border: selectedDate === getTodayStr() ? '1px solid rgba(255,92,58,0.3)' : '1px solid rgba(255,255,255,0.1)',
-              background: selectedDate === getTodayStr() ? 'rgba(255,92,58,0.1)' : 'rgba(255,255,255,0.04)',
-              color: selectedDate === getTodayStr() ? '#FF5C3A' : '#7070A0',
-              cursor: 'pointer', fontSize: 13, fontWeight: 600,
-              fontFamily: 'DM Sans, sans-serif',
-              transition: 'all 0.15s',
-            }}
-          >
-            Hoy
-          </button>
-        </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={e => setSelectedDate(e.target.value)}
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 10,
+                color: '#F0F0FF',
+                padding: '9px 14px',
+                fontSize: 14,
+                fontFamily: "'Inter', sans-serif",
+                outline: 'none',
+                cursor: 'pointer',
+                colorScheme: 'dark',
+              }}
+            />
+            <button
+              onClick={() => setSelectedDate(getTodayStr())}
+              style={{
+                padding: '9px 16px', borderRadius: 10,
+                border: selectedDate === getTodayStr() ? '1px solid rgba(255,92,58,0.3)' : '1px solid rgba(255,255,255,0.1)',
+                background: selectedDate === getTodayStr() ? 'rgba(255,92,58,0.1)' : 'rgba(255,255,255,0.04)',
+                color: selectedDate === getTodayStr() ? '#FF5C3A' : '#7070A0',
+                cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                fontFamily: "'Inter', sans-serif",
+                transition: 'all 0.15s',
+              }}
+            >
+              Hoy
+            </button>
+          </div>
         )}
 
         {/* Status Filters */}
@@ -340,7 +340,7 @@ export default function AppointmentsPage() {
                   background: isActive ? 'rgba(255,92,58,0.12)' : 'rgba(255,255,255,0.03)',
                   color: isActive ? '#FF5C3A' : '#7070A0',
                   cursor: 'pointer', fontSize: 13, fontWeight: isActive ? 600 : 400,
-                  fontFamily: 'DM Sans, sans-serif',
+                  fontFamily: "'Inter', sans-serif",
                   transition: 'all 0.15s',
                 }}
                 onMouseOver={e => {
@@ -376,17 +376,17 @@ export default function AppointmentsPage() {
               borderTopColor: '#FF5C3A', borderRadius: '50%', animation: 'spin 0.8s linear infinite',
             }} />
             <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-            <span style={{ fontSize: 12, color: '#7070A0', fontFamily: 'DM Sans, sans-serif' }}>Actualizando...</span>
+            <span style={{ fontSize: 12, color: '#7070A0', fontFamily: "'Inter', sans-serif" }}>Actualizando...</span>
           </div>
         )}
 
         {appointments.length === 0 && !loading ? (
           <div style={{ padding: '60px 24px', textAlign: 'center' }}>
             <p style={{ fontSize: 40, marginBottom: 12 }}>📅</p>
-            <p style={{ color: '#7070A0', fontSize: 15, fontFamily: 'DM Sans, sans-serif', fontWeight: 500, marginBottom: 4 }}>
+            <p style={{ color: '#7070A0', fontSize: 15, fontFamily: "'Inter', sans-serif", fontWeight: 500, marginBottom: 4 }}>
               No hay citas para esta fecha
             </p>
-            <p style={{ color: '#50506A', fontSize: 13, fontFamily: 'DM Sans, sans-serif' }}>
+            <p style={{ color: '#50506A', fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
               Selecciona otra fecha o crea una nueva cita
             </p>
           </div>
@@ -420,15 +420,15 @@ export default function AppointmentsPage() {
                 {/* Time column */}
                 <div style={{ minWidth: 56, textAlign: 'center' }}>
                   {statusFilter === 'pending' && (
-                    <p style={{ fontSize: 10, color: '#7070A0', fontFamily: 'DM Sans, sans-serif', marginBottom: 2, textTransform: 'capitalize' }}>
+                    <p style={{ fontSize: 10, color: '#7070A0', fontFamily: "'Inter', sans-serif", marginBottom: 2, textTransform: 'capitalize' }}>
                       {new Date(appt.starts_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
                     </p>
                   )}
-                  <p style={{ fontFamily: 'Syne, sans-serif', fontSize: 15, fontWeight: 700, color: '#FF5C3A' }}>
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, fontWeight: 700, color: '#FF5C3A' }}>
                     {time}
                   </p>
                   {appt.ends_at && (
-                    <p style={{ fontSize: 11, color: '#50506A', fontFamily: 'DM Sans, sans-serif', marginTop: 2 }}>
+                    <p style={{ fontSize: 11, color: '#50506A', fontFamily: "'Inter', sans-serif", marginTop: 2 }}>
                       {endTime}
                     </p>
                   )}
@@ -447,7 +447,7 @@ export default function AppointmentsPage() {
 
                 {/* Info */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: '#F0F0FF', fontFamily: 'DM Sans, sans-serif', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: '#F0F0FF', fontFamily: "'Inter', sans-serif", marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {name}
                   </p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -455,7 +455,7 @@ export default function AppointmentsPage() {
                       width: 8, height: 8, borderRadius: '50%',
                       background: serviceColor, flexShrink: 0,
                     }} />
-                    <span style={{ fontSize: 13, color: '#7070A0', fontFamily: 'DM Sans, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: 13, color: '#7070A0', fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {service} &middot; {appt.duration_min || '?'} min
                       {appt.staff_name && (
                         <span style={{ color: '#7070A0', marginLeft: 4 }}>&middot; {appt.staff_name}</span>
@@ -468,14 +468,14 @@ export default function AppointmentsPage() {
                 <div style={{
                   padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600,
                   background: st.bg, color: st.color,
-                  fontFamily: 'DM Sans, sans-serif',
+                  fontFamily: "'Inter', sans-serif",
                   whiteSpace: 'nowrap',
                 }}>
                   {st.label}
                 </div>
 
                 {/* Price */}
-                <span style={{ fontFamily: 'Syne, sans-serif', fontSize: 15, fontWeight: 700, color: '#F0F0FF', minWidth: 72, textAlign: 'right' }}>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, fontWeight: 700, color: '#F0F0FF', minWidth: 72, textAlign: 'right' }}>
                   ${Number(price).toLocaleString('es-MX')}
                 </span>
 
@@ -577,7 +577,7 @@ export default function AppointmentsPage() {
           >
             {/* Modal Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
-              <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 20, fontWeight: 800, color: '#F0F0FF' }}>
+              <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 20, fontWeight: 800, color: '#F0F0FF' }}>
                 Nueva cita
               </h2>
               <button
@@ -723,7 +723,7 @@ export default function AppointmentsPage() {
                     border: '1px solid rgba(255,255,255,0.1)',
                     background: 'rgba(255,255,255,0.04)', color: '#7070A0',
                     cursor: 'pointer', fontSize: 14, fontWeight: 600,
-                    fontFamily: 'DM Sans, sans-serif',
+                    fontFamily: "'Inter', sans-serif",
                     transition: 'all 0.15s',
                   }}
                   onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#F0F0FF' }}
@@ -738,7 +738,7 @@ export default function AppointmentsPage() {
                     flex: 1, padding: '12px 20px', borderRadius: 10, border: 'none',
                     background: saving ? 'rgba(255,92,58,0.3)' : 'linear-gradient(135deg, #FF5C3A, #FF7A52)',
                     color: 'white', cursor: saving ? 'not-allowed' : 'pointer',
-                    fontSize: 14, fontWeight: 600, fontFamily: 'DM Sans, sans-serif',
+                    fontSize: 14, fontWeight: 600, fontFamily: "'Inter', sans-serif",
                     boxShadow: saving ? 'none' : '0 4px 20px rgba(255,92,58,0.3)',
                     transition: 'all 0.15s',
                   }}
