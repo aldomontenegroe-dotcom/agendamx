@@ -340,8 +340,8 @@ export default function AuthPage({ onAuth }) {
   return (
     <div style={{ minHeight:"100vh", background:"#0c0c0c", display:"flex", fontFamily:"system-ui, sans-serif" }}>
 
-      {/* Left brand panel — hidden on mobile */}
-      <div style={{ display: window.innerWidth > 1024 ? "block" : "none" }}>
+      {/* Left brand panel — hidden on small screens via CSS media query */}
+      <div className="auth-brand-panel">
         <BrandPanel />
       </div>
 
