@@ -2,6 +2,82 @@ const paymentService = require('../services/paymentService')
 const Stripe = require('stripe')
 const stripe = process.env.STRIPE_SECRET_KEY ? Stripe(process.env.STRIPE_SECRET_KEY) : null
 
+// ═══════════════════════════════════════════════════════════════════
+// STRIPE CONNECT — Cada negocio conecta su propia cuenta
+// ═══════════════════════════════════════════════════════════════════
+
+// GET /api/payments/connect/status — Check if business has Stripe connected
+exports.connectStatus = async (req, res) => {
+  try {
+    const status = await paymentService.getStripeConnectStatus(req.user.businessId)
+    const providers = await paymentService.hasPaymentProvider(req.user.businessId)
+    res.json({ stripe: status, providers })
+  } catch (err) {
+    console.error('connectStatus error:', err)
+    res.status(500).json({ error: 'Error al verificar conexión Stripe' })
+  }
+}
+
+// POST /api/payments/connect/stripe — Start Stripe Connect onboarding
+exports.connectStripe = async (req, res) => {
+  try {
+    const result = await paymentService.getStripeConnectUrl(req.user.businessId)
+    res.json(result)
+  } catch (err) {
+    console.error('connectStripe error:', err)
+    res.status(500).json({ error: 'Error al conectar Stripe: ' + err.message })
+  }
+}
+
+// POST /api/payments/connect/stripe/disconnect — Disconnect Stripe
+exports.disconnectStripe = async (req, res) => {
+  try {
+    await paymentService.disconnectStripe(req.user.businessId)
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('disconnectStripe error:', err)
+    res.status(500).json({ error: 'Error al desconectar Stripe' })
+  }
+}
+
+// POST /api/payments/connect/mercadopago — Save MP access token
+exports.connectMercadoPago = async (req, res) => {
+  const { accessToken } = req.body
+  if (!accessToken) {
+    return res.status(400).json({ error: 'accessToken requerido' })
+  }
+  try {
+    const db = require('../config/db')
+    await db.query(
+      'UPDATE businesses SET mercadopago_access_token = $1 WHERE id = $2',
+      [accessToken, req.user.businessId]
+    )
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('connectMercadoPago error:', err)
+    res.status(500).json({ error: 'Error al guardar token de Mercado Pago' })
+  }
+}
+
+// POST /api/payments/connect/mercadopago/disconnect — Remove MP token
+exports.disconnectMercadoPago = async (req, res) => {
+  try {
+    const db = require('../config/db')
+    await db.query(
+      'UPDATE businesses SET mercadopago_access_token = NULL WHERE id = $1',
+      [req.user.businessId]
+    )
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('disconnectMercadoPago error:', err)
+    res.status(500).json({ error: 'Error al desconectar Mercado Pago' })
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PAYMENT SESSIONS — Para clientes que pagan
+// ═══════════════════════════════════════════════════════════════════
+
 // POST /api/payments/session — Create payment session for an appointment
 exports.createSession = async (req, res) => {
   const { appointmentId, returnUrl } = req.body
@@ -10,47 +86,11 @@ exports.createSession = async (req, res) => {
   }
 
   try {
-    const db = require('../config/db')
-    const appt = await db.query(
-      `SELECT a.id, a.business_id, a.price, a.client_name, a.payment_status,
-              s.name as service_name,
-              b.accept_payments, b.payment_mode, b.deposit_percentage
-       FROM appointments a
-       JOIN services s ON s.id = a.service_id
-       JOIN businesses b ON b.id = a.business_id
-       WHERE a.id = $1`,
-      [appointmentId]
-    )
-
-    if (!appt.rows.length) {
-      return res.status(404).json({ error: 'Cita no encontrada' })
+    const result = await paymentService.generatePaymentLink({ appointmentId, businessId: null })
+    if (!result) {
+      return res.status(400).json({ error: 'No se pudo generar link de pago. Verifica que el negocio tenga pagos configurados.' })
     }
-
-    const row = appt.rows[0]
-    if (!row.accept_payments) {
-      return res.status(400).json({ error: 'Este negocio no acepta pagos en línea' })
-    }
-    if (row.payment_status === 'paid') {
-      return res.status(400).json({ error: 'Esta cita ya fue pagada' })
-    }
-
-    // Calcular monto
-    let amount = Number(row.price) || 0
-    if (row.payment_mode === 'deposit') {
-      amount = Math.ceil(amount * (row.deposit_percentage / 100))
-    }
-
-    // Intentar crear sesión de pago
-    const result = await paymentService.createStripeSession({
-      businessId: row.business_id,
-      appointmentId,
-      amount,
-      clientName: row.client_name,
-      serviceName: row.service_name,
-      returnUrl,
-    })
-
-    res.json({ paymentUrl: result.url, amount, sessionId: result.sessionId })
+    res.json({ paymentUrl: result.url, amount: result.amount, method: result.method })
   } catch (err) {
     console.error('createSession error:', err)
     res.status(500).json({ error: 'Error al crear sesión de pago' })

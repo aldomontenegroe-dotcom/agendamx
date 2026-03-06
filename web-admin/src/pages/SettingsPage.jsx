@@ -103,6 +103,8 @@ export default function SettingsPage() {
   // Payment settings state
   const [paymentSaving, setPaymentSaving] = useState(false)
   const [paymentSuccess, setPaymentSuccess] = useState(false)
+  const [paymentProviders, setPaymentProviders] = useState({ stripe: { connected: false }, providers: { stripe: false, mercadopago: false } })
+  const [connectingStripe, setConnectingStripe] = useState(false)
 
   // Business hours state
   const [hours, setHours] = useState(
@@ -170,6 +172,30 @@ export default function SettingsPage() {
       .catch(() => {})
       .finally(() => setHoursLoading(false))
   }, [])
+
+  // Fetch payment providers status
+  useEffect(() => {
+    apiFetch('/api/payments/connect/status')
+      .then(data => setPaymentProviders(data))
+      .catch(() => {})
+  }, [])
+
+  const handleConnectStripe = () => {
+    setConnectingStripe(true)
+    apiFetch('/api/payments/connect/stripe', { method: 'POST' })
+      .then(data => {
+        if (data.url) window.open(data.url, '_blank')
+      })
+      .catch(err => alert(err.message || 'Error al conectar Stripe'))
+      .finally(() => setConnectingStripe(false))
+  }
+
+  const handleDisconnectStripe = () => {
+    if (!confirm('¿Desconectar Stripe? Los pagos online dejarán de funcionar.')) return
+    apiFetch('/api/payments/connect/stripe/disconnect', { method: 'POST' })
+      .then(() => setPaymentProviders(p => ({ ...p, stripe: { connected: false }, providers: { ...p.providers, stripe: false } })))
+      .catch(err => alert(err.message || 'Error'))
+  }
 
   const handleBizSave = () => {
     setBizSaving(true)
@@ -640,8 +666,67 @@ export default function SettingsPage() {
           />
         </div>
 
-        {/* Payment mode options (visible when payments enabled) */}
+        {/* Payment providers (visible when payments enabled) */}
         {bizForm.acceptPayments && (
+          <div style={{
+            padding: '16px 20px', borderRadius: 12, marginBottom: 20,
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(255,255,255,0.06)',
+          }}>
+            <label style={{ ...labelStyle, marginBottom: 12 }}>Conectar proveedor de pagos</label>
+
+            {/* Stripe Connect */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 18 }}>💳</span>
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: '#F0F0FF', fontFamily: 'DM Sans, sans-serif' }}>Stripe</p>
+                  <p style={{ fontSize: 11, color: paymentProviders.stripe?.connected ? '#00E5A0' : '#7070A0', fontFamily: 'DM Sans, sans-serif' }}>
+                    {paymentProviders.stripe?.connected
+                      ? (paymentProviders.stripe.chargesEnabled ? 'Conectado y activo' : 'Conectado (completar verificación)')
+                      : 'No conectado'}
+                  </p>
+                </div>
+              </div>
+              {paymentProviders.stripe?.connected ? (
+                <button onClick={handleDisconnectStripe} style={{
+                  padding: '6px 14px', borderRadius: 8, border: '1px solid rgba(255,92,58,0.2)',
+                  background: 'rgba(255,92,58,0.06)', color: '#FF5C3A', cursor: 'pointer',
+                  fontSize: 12, fontFamily: 'DM Sans, sans-serif',
+                }}>Desconectar</button>
+              ) : (
+                <button onClick={handleConnectStripe} disabled={connectingStripe} style={{
+                  padding: '6px 14px', borderRadius: 8, border: 'none',
+                  background: 'linear-gradient(135deg, #635BFF, #7B73FF)', color: 'white', cursor: 'pointer',
+                  fontSize: 12, fontWeight: 600, fontFamily: 'DM Sans, sans-serif',
+                  opacity: connectingStripe ? 0.6 : 1,
+                }}>{connectingStripe ? 'Conectando...' : 'Conectar Stripe'}</button>
+              )}
+            </div>
+
+            {/* Mercado Pago info */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 18 }}>🔵</span>
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: '#F0F0FF', fontFamily: 'DM Sans, sans-serif' }}>Mercado Pago</p>
+                  <p style={{ fontSize: 11, color: paymentProviders.providers?.mercadopago ? '#00E5A0' : '#7070A0', fontFamily: 'DM Sans, sans-serif' }}>
+                    {paymentProviders.providers?.mercadopago ? 'Conectado' : 'Próximamente'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {!paymentProviders.providers?.stripe && !paymentProviders.providers?.mercadopago && (
+              <p style={{ fontSize: 12, color: '#FF9500', fontFamily: 'DM Sans, sans-serif', marginTop: 12, padding: '8px 12px', borderRadius: 8, background: 'rgba(255,149,0,0.08)' }}>
+                Conecta Stripe para empezar a cobrar. Los pagos van directo a tu cuenta.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Payment mode options (visible when payments enabled and provider connected) */}
+        {bizForm.acceptPayments && (paymentProviders.providers?.stripe || paymentProviders.providers?.mercadopago) && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {/* Payment mode radio */}
             <div>
