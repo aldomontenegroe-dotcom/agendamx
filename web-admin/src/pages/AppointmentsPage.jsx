@@ -48,6 +48,12 @@ const statusConfig = {
   no_show:   { label: 'No asistió', color: '#8B5CF6', bg: 'rgba(139,92,246,0.1)' },
 }
 
+const paymentStatusConfig = {
+  paid:    { label: 'Pagado',    icon: '$', color: '#00E5A0', bg: 'rgba(0,229,160,0.1)' },
+  partial: { label: 'Anticipo',  icon: '$', color: '#FF9500', bg: 'rgba(255,149,0,0.1)' },
+  unpaid:  { label: 'Sin pago',  icon: '$', color: '#7070A0', bg: 'rgba(112,112,160,0.06)' },
+}
+
 const filterButtons = [
   { key: '',          label: 'Todas' },
   { key: 'pending',   label: 'Pendientes' },
@@ -473,6 +479,25 @@ export default function AppointmentsPage() {
                 }}>
                   {st.label}
                 </div>
+
+                {/* Payment badge */}
+                {appt.payment_amount != null && (() => {
+                  const ps = appt.paid_at ? paymentStatusConfig.paid
+                    : appt.payment_amount > 0 && appt.payment_amount < price ? paymentStatusConfig.partial
+                    : paymentStatusConfig.unpaid
+                  return (
+                    <div style={{
+                      padding: '5px 10px', borderRadius: 8, fontSize: 11, fontWeight: 600,
+                      background: ps.bg, color: ps.color,
+                      fontFamily: 'DM Sans, sans-serif',
+                      whiteSpace: 'nowrap',
+                      display: 'flex', alignItems: 'center', gap: 4,
+                    }}>
+                      <span style={{ fontSize: 10, fontWeight: 700 }}>{ps.icon}</span>
+                      {ps.label}
+                    </div>
+                  )
+                })()}
 
                 {/* Price */}
                 <span style={{ fontFamily: 'Syne, sans-serif', fontSize: 15, fontWeight: 700, color: '#F0F0FF', minWidth: 72, textAlign: 'right' }}>

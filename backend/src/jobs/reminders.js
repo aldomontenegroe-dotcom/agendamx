@@ -27,14 +27,16 @@ async function runReminders() {
     const r24 = await db.query(`
       SELECT a.id, a.starts_at, a.client_name, a.client_phone,
              a.client_id, a.business_id,
+             a.paid_at, a.payment_amount, a.price,
              s.name as service_name,
              b.name as business_name,
+             b.accept_payments, b.payment_mode, b.deposit_percentage,
              c.email as client_email
       FROM appointments a
       JOIN services s ON s.id = a.service_id
       JOIN businesses b ON b.id = a.business_id
       LEFT JOIN clients c ON c.id = a.client_id
-      WHERE a.status = 'confirmed'
+      WHERE a.status IN ('confirmed', 'pending')
         AND a.reminder_24h_sent = false
         AND a.starts_at BETWEEN NOW() + INTERVAL '23 hours'
                              AND NOW() + INTERVAL '25 hours'
@@ -42,12 +44,35 @@ async function runReminders() {
 
     for (const appt of r24.rows) {
       log(`Enviando recordatorio 24h a ${appt.client_name} (${appt.client_phone})`)
+
+      // If payment is enabled and unpaid, generate payment link
+      let paymentUrl = null
+      if (appt.accept_payments && !appt.paid_at && appt.price > 0) {
+        try {
+          const paymentService = require('../services/paymentService')
+          const result = await paymentService.generatePaymentLink({
+            appointmentId: appt.id,
+            businessId: appt.business_id,
+            amount: appt.price,
+            paymentMode: appt.payment_mode,
+            depositPercentage: appt.deposit_percentage,
+            serviceName: appt.service_name,
+            clientName: appt.client_name,
+            clientPhone: appt.client_phone,
+          })
+          paymentUrl = result?.url || null
+        } catch (e) {
+          console.error('Payment link for reminder error:', e)
+        }
+      }
+
       const result = await wa.sendReminder24h({
         clientPhone:   appt.client_phone,
         clientName:    appt.client_name,
         businessName:  appt.business_name,
         serviceName:   appt.service_name,
         startsAt:      appt.starts_at,
+        paymentUrl,
       })
       if (result.ok) {
         await db.query(

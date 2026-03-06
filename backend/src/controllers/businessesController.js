@@ -7,7 +7,7 @@ exports.getPublic = async (req, res) => {
     const result = await db.query(
       `SELECT slug, name, description, phone, address, city,
               timezone, logo_url, cover_url, accent_color,
-              welcome_message
+              welcome_message, accept_payments, payment_mode, deposit_percentage
        FROM businesses WHERE slug = $1 AND is_active = true`,
       [slug]
     )
@@ -29,7 +29,8 @@ exports.getMe = async (req, res) => {
       `SELECT id, slug, name, description, phone, whatsapp, email,
               address, city, state, timezone, logo_url, cover_url,
               accent_color, welcome_message, template_id,
-              plan, plan_expires_at, settings
+              plan, plan_expires_at, settings,
+              accept_payments, payment_mode, deposit_percentage
        FROM businesses WHERE id = $1`,
       [businessId]
     )
@@ -47,7 +48,8 @@ exports.getMe = async (req, res) => {
 exports.updateMe = async (req, res) => {
   const { businessId } = req.user
   const { name, description, phone, whatsapp, email, address,
-          city, state, timezone, accentColor } = req.body
+          city, state, timezone, accentColor,
+          acceptPayments, paymentMode, depositPercentage } = req.body
   try {
     const result = await db.query(
       `UPDATE businesses SET
@@ -61,10 +63,14 @@ exports.updateMe = async (req, res) => {
          state = COALESCE($8, state),
          timezone = COALESCE($9, timezone),
          accent_color = COALESCE($10, accent_color),
+         accept_payments = COALESCE($12, accept_payments),
+         payment_mode = COALESCE($13, payment_mode),
+         deposit_percentage = COALESCE($14, deposit_percentage),
          updated_at = NOW()
        WHERE id = $11 RETURNING *`,
       [name, description, phone, whatsapp, email, address,
-       city, state, timezone, accentColor, businessId]
+       city, state, timezone, accentColor, businessId,
+       acceptPayments, paymentMode, depositPercentage]
     )
     res.json({ business: result.rows[0] })
   } catch (err) {

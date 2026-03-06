@@ -273,6 +273,11 @@ function Step3Contact({ slug, booking, onNext, onBack }) {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error al agendar')
       setLoading(false)
+      // If payment is required, redirect to payment URL
+      if (data.paymentRequired && data.paymentUrl) {
+        window.location.href = data.paymentUrl
+        return
+      }
       onNext(form)
     } catch (err) {
       setError(err.message)

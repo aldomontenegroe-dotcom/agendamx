@@ -9,7 +9,8 @@ exports.list = async (req, res) => {
 
   let query = `
     SELECT a.id, a.starts_at, a.ends_at, a.status, a.price,
-           a.payment_status, a.client_name, a.client_phone, a.client_notes,
+           a.payment_status, a.payment_amount, a.paid_at,
+           a.client_name, a.client_phone, a.client_notes,
            a.staff_notes, a.reminder_24h_sent, a.reminder_1h_sent,
            s.name as service_name, s.duration_min, s.color as service_color,
            u.name as staff_name
@@ -332,7 +333,7 @@ exports.book = async (req, res) => {
     await txn.query('BEGIN')
 
     const biz = await txn.query(
-      'SELECT id, name FROM businesses WHERE slug = $1 AND is_active = true',
+      'SELECT id, name, accept_payments, payment_mode, deposit_percentage FROM businesses WHERE slug = $1 AND is_active = true',
       [slug]
     )
     if (biz.rows.length === 0) {
@@ -340,6 +341,7 @@ exports.book = async (req, res) => {
       return res.status(404).json({ error: 'Negocio no encontrado' })
     }
     const businessId = biz.rows[0].id
+    const businessData = biz.rows[0]
 
     const svc = await txn.query(
       'SELECT id, name, duration_min, price FROM services WHERE id = $1 AND business_id = $2 AND is_active = true',
@@ -478,6 +480,21 @@ exports.book = async (req, res) => {
         serviceName: service.name, startsAt,
       })).catch(e => console.error('Email owner error:', e))
 
+    // Generate payment URL if business accepts payments
+    let paymentUrl = null
+    if (businessData.accept_payments && service.price > 0) {
+      try {
+        const paymentService = require('../services/paymentService')
+        const paymentResult = await paymentService.generatePaymentLink({
+          appointmentId: appt.rows[0].id,
+          businessId,
+        })
+        if (paymentResult) paymentUrl = paymentResult.url
+      } catch (e) {
+        console.error('Payment link generation error:', e.message)
+      }
+    }
+
     res.status(201).json({
       appointment: {
         id: appt.rows[0].id,
@@ -487,7 +504,11 @@ exports.book = async (req, res) => {
         service: service.name,
         price: service.price,
       },
-      message: '¡Cita agendada! Recibirás confirmación por WhatsApp.',
+      paymentUrl,
+      paymentRequired: !!paymentUrl,
+      message: paymentUrl
+        ? '¡Cita reservada! Completa el pago para confirmarla.'
+        : '¡Cita agendada! Recibirás confirmación por WhatsApp.',
     })
   } catch (err) {
     await txn.query('ROLLBACK').catch(() => {})

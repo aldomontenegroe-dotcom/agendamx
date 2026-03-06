@@ -21,8 +21,9 @@ const PORT = process.env.PORT || 4000
 app.set('trust proxy', 1)
 app.use(helmet())
 app.use(cors({ origin: process.env.CORS_ORIGINS?.split(',') || '*' }))
-// Stripe webhook needs raw body — must be before express.json()
+// Stripe webhooks need raw body — must be before express.json()
 app.use('/api/subscription/webhook', express.raw({ type: 'application/json' }))
+app.use('/api/payments/webhook', express.raw({ type: 'application/json' }))
 
 app.use(express.json({ limit: '1mb' }))
 app.use(express.urlencoded({ extended: true }))
@@ -41,6 +42,7 @@ app.use('/api/clients',        require('./routes/clients'))
 app.use('/api/stats',          require('./routes/stats'))
 app.use('/api/staff',          require('./routes/staff'))
 app.use('/api/subscription', require('./routes/subscription'))
+app.use('/api/payments',     require('./routes/payments'))
 
 // ─── Error handlers ───────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Ruta no encontrada' }))

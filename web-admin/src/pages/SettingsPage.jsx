@@ -93,9 +93,16 @@ export default function SettingsPage() {
     state: '',
     timezone: 'America/Mexico_City',
     accentColor: '#FF5C3A',
+    acceptPayments: false,
+    paymentMode: 'full',
+    depositPercentage: 50,
   })
   const [bizSaving, setBizSaving] = useState(false)
   const [bizSuccess, setBizSuccess] = useState(false)
+
+  // Payment settings state
+  const [paymentSaving, setPaymentSaving] = useState(false)
+  const [paymentSuccess, setPaymentSuccess] = useState(false)
 
   // Business hours state
   const [hours, setHours] = useState(
@@ -131,6 +138,9 @@ export default function SettingsPage() {
           state: b.state || '',
           timezone: b.timezone || 'America/Mexico_City',
           accentColor: b.accent_color || '#FF5C3A',
+          acceptPayments: !!b.accept_payments,
+          paymentMode: b.payment_mode || 'full',
+          depositPercentage: b.deposit_percentage || 50,
         })
       })
       .catch(() => {})
@@ -190,6 +200,26 @@ export default function SettingsPage() {
       })
       .catch(err => alert(err.message || 'Error al guardar horarios'))
       .finally(() => setHoursSaving(false))
+  }
+
+  const handlePaymentSave = () => {
+    setPaymentSaving(true)
+    setPaymentSuccess(false)
+    apiFetch('/api/businesses/me', {
+      method: 'PUT',
+      body: JSON.stringify({
+        acceptPayments: bizForm.acceptPayments,
+        paymentMode: bizForm.paymentMode,
+        depositPercentage: bizForm.depositPercentage,
+      }),
+    })
+      .then(data => {
+        setBusiness(data.business || business)
+        setPaymentSuccess(true)
+        setTimeout(() => setPaymentSuccess(false), 3000)
+      })
+      .catch(err => alert(err.message || 'Error al guardar configuración de pagos'))
+      .finally(() => setPaymentSaving(false))
   }
 
   const updateHour = (index, field, value) => {
@@ -570,6 +600,174 @@ export default function SettingsPage() {
             </div>
           </>
         )}
+      </div>
+
+      {/* ===== Section 3: Payment Settings ===== */}
+      <div style={{
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.07)',
+        borderRadius: 16,
+        padding: '28px',
+        marginBottom: 24,
+      }}>
+        <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 700, color: '#F0F0FF', marginBottom: 8 }}>
+          Pagos Online
+        </h2>
+        <p style={{ color: '#7070A0', fontSize: 13, fontFamily: 'DM Sans, sans-serif', marginBottom: 24 }}>
+          Cobra a tus clientes al momento de agendar su cita
+        </p>
+
+        {/* Toggle accept payments */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '16px 20px', borderRadius: 12,
+          background: bizForm.acceptPayments ? 'rgba(0,229,160,0.04)' : 'rgba(255,255,255,0.02)',
+          border: `1px solid ${bizForm.acceptPayments ? 'rgba(0,229,160,0.1)' : 'rgba(255,255,255,0.04)'}`,
+          marginBottom: 20,
+          transition: 'all 0.2s',
+        }}>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#F0F0FF', fontFamily: 'DM Sans, sans-serif', marginBottom: 2 }}>
+              Aceptar pagos al agendar
+            </p>
+            <p style={{ fontSize: 12, color: '#7070A0', fontFamily: 'DM Sans, sans-serif' }}>
+              Los clientes podrán pagar al reservar su cita online
+            </p>
+          </div>
+          <ToggleSwitch
+            checked={bizForm.acceptPayments}
+            onChange={(val) => setBizForm({ ...bizForm, acceptPayments: val })}
+          />
+        </div>
+
+        {/* Payment mode options (visible when payments enabled) */}
+        {bizForm.acceptPayments && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Payment mode radio */}
+            <div>
+              <label style={labelStyle}>Modo de cobro</label>
+              <div style={{ display: 'flex', gap: 12 }}>
+                {/* Full payment */}
+                <div
+                  onClick={() => setBizForm({ ...bizForm, paymentMode: 'full' })}
+                  style={{
+                    flex: 1, padding: '14px 16px', borderRadius: 12, cursor: 'pointer',
+                    background: bizForm.paymentMode === 'full' ? 'rgba(255,92,58,0.08)' : 'rgba(255,255,255,0.02)',
+                    border: `1px solid ${bizForm.paymentMode === 'full' ? 'rgba(255,92,58,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                    <div style={{
+                      width: 18, height: 18, borderRadius: '50%',
+                      border: `2px solid ${bizForm.paymentMode === 'full' ? '#FF5C3A' : 'rgba(255,255,255,0.15)'}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {bizForm.paymentMode === 'full' && (
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#FF5C3A' }} />
+                      )}
+                    </div>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: '#F0F0FF', fontFamily: 'DM Sans, sans-serif' }}>
+                      Pago completo
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 12, color: '#7070A0', fontFamily: 'DM Sans, sans-serif', paddingLeft: 28 }}>
+                    El cliente paga el 100% del servicio al reservar
+                  </p>
+                </div>
+
+                {/* Deposit */}
+                <div
+                  onClick={() => setBizForm({ ...bizForm, paymentMode: 'deposit' })}
+                  style={{
+                    flex: 1, padding: '14px 16px', borderRadius: 12, cursor: 'pointer',
+                    background: bizForm.paymentMode === 'deposit' ? 'rgba(255,92,58,0.08)' : 'rgba(255,255,255,0.02)',
+                    border: `1px solid ${bizForm.paymentMode === 'deposit' ? 'rgba(255,92,58,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                    <div style={{
+                      width: 18, height: 18, borderRadius: '50%',
+                      border: `2px solid ${bizForm.paymentMode === 'deposit' ? '#FF5C3A' : 'rgba(255,255,255,0.15)'}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {bizForm.paymentMode === 'deposit' && (
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#FF5C3A' }} />
+                      )}
+                    </div>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: '#F0F0FF', fontFamily: 'DM Sans, sans-serif' }}>
+                      Anticipo
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 12, color: '#7070A0', fontFamily: 'DM Sans, sans-serif', paddingLeft: 28 }}>
+                    El cliente paga un porcentaje al reservar
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Deposit percentage (only when deposit mode) */}
+            {bizForm.paymentMode === 'deposit' && (
+              <div>
+                <label style={labelStyle}>Porcentaje de anticipo</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <input
+                    type="range"
+                    min="10"
+                    max="90"
+                    step="5"
+                    value={bizForm.depositPercentage}
+                    onChange={(e) => setBizForm({ ...bizForm, depositPercentage: Number(e.target.value) })}
+                    style={{
+                      flex: 1, height: 6, borderRadius: 3,
+                      appearance: 'none', background: 'rgba(255,255,255,0.1)',
+                      cursor: 'pointer',
+                      accentColor: '#FF5C3A',
+                    }}
+                  />
+                  <span style={{
+                    fontSize: 20, fontWeight: 700, color: '#FF5C3A',
+                    fontFamily: 'Syne, sans-serif', minWidth: 52, textAlign: 'right',
+                  }}>
+                    {bizForm.depositPercentage}%
+                  </span>
+                </div>
+                <p style={{ fontSize: 12, color: '#7070A0', fontFamily: 'DM Sans, sans-serif', marginTop: 6 }}>
+                  Ejemplo: Para un servicio de $500, el cliente pagará ${Math.round(500 * bizForm.depositPercentage / 100)} al reservar
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Save button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 24 }}>
+          <button
+            onClick={handlePaymentSave}
+            disabled={paymentSaving}
+            style={{
+              padding: '10px 24px',
+              borderRadius: 10,
+              border: 'none',
+              background: 'linear-gradient(135deg, #FF5C3A, #FF7A52)',
+              color: 'white',
+              cursor: paymentSaving ? 'not-allowed' : 'pointer',
+              fontSize: 14,
+              fontWeight: 600,
+              fontFamily: 'DM Sans, sans-serif',
+              boxShadow: '0 4px 20px rgba(255,92,58,0.3)',
+              opacity: paymentSaving ? 0.6 : 1,
+            }}
+          >
+            {paymentSaving ? 'Guardando...' : 'Guardar pagos'}
+          </button>
+          {paymentSuccess && (
+            <span style={{ fontSize: 14, color: '#00E5A0', fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <IconCheck /> Configuración guardada
+            </span>
+          )}
+        </div>
       </div>
     </div>
   )

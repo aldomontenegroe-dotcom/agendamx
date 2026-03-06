@@ -141,10 +141,69 @@ async function getPendingAppointment(phone) {
 // ═══════════════════════════════════════════════════════════════════
 // MAIN HANDLER
 // ═══════════════════════════════════════════════════════════════════
-async function handleMessage(phone, text, contactName) {
+async function handleMessage(phone, text, contactName, interactiveReply) {
   const state = getState(phone)
-  const intent = detectIntent(text)
   const trimmed = text.trim()
+
+  // ─── Handle interactive reply IDs ─────────────────────────────
+  // Interactive replies come as IDs like "menu_cita", "svc_0", "date_2", etc.
+  if (interactiveReply) {
+    const replyId = interactiveReply.id
+
+    // Menu selections from greet list
+    if (replyId.startsWith('menu_')) {
+      const menuMap = {
+        menu_servicios: 'SERVICES', menu_precios: 'PRICES', menu_cita: 'BOOK',
+        menu_horario: 'HOURS', menu_ubicacion: 'LOCATION', menu_humano: 'HUMAN',
+        menu_confirmar: 'CONFIRM', menu_cancelar: 'CANCEL', menu_reagendar: 'RESCHEDULE',
+      }
+      const mappedIntent = menuMap[replyId]
+      if (mappedIntent) {
+        // Resolve business context and handle
+        const pendingAppt = await getPendingAppointment(phone)
+        let biz = state ? { id: state.businessId, name: state.businessName, slug: state.slug } : null
+        if (!biz && pendingAppt) biz = { id: pendingAppt.business_id, name: pendingAppt.business_name, slug: pendingAppt.slug, template_id: pendingAppt.template_id }
+        if (!biz) { const resolved = await resolveBusiness(phone); if (resolved) biz = resolved }
+        if (!biz) return wa.sendText(phone, '¡Hola! No encontré tu negocio. Pide a tu negocio su link de AgendaMX.')
+        if (!biz.template_id) {
+          const full = await db.query('SELECT template_id, welcome_message, address, city, state FROM businesses WHERE id = $1', [biz.id])
+          if (full.rows.length) Object.assign(biz, full.rows[0])
+        }
+        const tone = getTone(biz.template_id)
+        setState(phone, { ...(state || {}), businessId: biz.id, businessName: biz.name, slug: biz.slug })
+
+        switch (mappedIntent) {
+          case 'CONFIRM': return handleConfirm(phone, pendingAppt, biz)
+          case 'CANCEL': return handleCancel(phone, pendingAppt)
+          case 'RESCHEDULE': return handleReschedule(phone, pendingAppt, biz)
+          case 'BOOK': return startBooking(phone, biz, contactName)
+          case 'PRICES': return handlePrices(phone, biz, tone)
+          case 'HOURS': return handleHours(phone, biz, tone)
+          case 'LOCATION': return handleLocation(phone, biz, tone)
+          case 'SERVICES': return handleServices(phone, biz, tone)
+          case 'HUMAN': return handleHuman(phone, biz, contactName)
+        }
+      }
+    }
+
+    // Booking flow interactive replies
+    if (state && state.step && state.step.startsWith('BOOK_')) {
+      if (replyId === 'cancel_booking') {
+        clearState(phone)
+        return wa.sendText(phone, '❌ Reserva cancelada. Escribe *CITA* cuando quieras intentar de nuevo.')
+      }
+      if (replyId === 'confirm_booking') {
+        return handleBookingStep(phone, 'sí', state, contactName)
+      }
+      // Extract number from interactive IDs like "svc_2", "date_1", "time_5", "staff_0"
+      const numMatch = replyId.match(/^(?:svc|date|time|staff)_(\d+)$/)
+      if (numMatch) {
+        return handleBookingStep(phone, String(parseInt(numMatch[1]) + 1), state, contactName)
+      }
+    }
+  }
+
+  const intent = detectIntent(text)
 
   // ─── If in a booking flow, handle step input first ───────────
   if (state && state.step && state.step.startsWith('BOOK_')) {
@@ -236,24 +295,41 @@ async function handleMessage(phone, text, contactName) {
 
 async function handleGreet(phone, biz, tone, name, pendingAppt) {
   const greeting = biz.welcome_message || `${greetWord(tone)} ${name}! Bienvenido a *${biz.name}*.`
-  let msg = `${greeting}\n\n¿En qué te puedo ayudar?\n\n`
-  msg += `📋 *SERVICIOS* — Ver qué ofrecemos\n`
-  msg += `💰 *PRECIOS* — Consultar tarifas\n`
-  msg += `📅 *CITA* — Agendar una cita\n`
-  msg += `🕐 *HORARIO* — Ver horarios\n`
-  msg += `📍 *UBICACIÓN* — Cómo llegar\n`
-  msg += `👤 *HUMANO* — Hablar con alguien\n`
+
+  let bodyText = greeting + '\n\n¿En qué te puedo ayudar?'
 
   if (pendingAppt) {
     const d = new Date(pendingAppt.starts_at)
-    msg += `\n━━━━━━━━━━━━━━━━━━\n`
-    msg += `📌 Tienes una cita: *${pendingAppt.service_name}*\n`
-    msg += `📅 ${d.toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long', timeZone:'America/Mexico_City' })} `
-    msg += `a las ${d.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit', timeZone:'America/Mexico_City' })}\n`
-    msg += `Responde *SÍ* para confirmar o *NO* para cancelar.`
+    bodyText += `\n\n📌 Tienes una cita: *${pendingAppt.service_name}*\n`
+    bodyText += `📅 ${d.toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long', timeZone:'America/Mexico_City' })} `
+    bodyText += `a las ${d.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit', timeZone:'America/Mexico_City' })}`
   }
 
-  return wa.sendText(phone, msg)
+  const sections = [{
+    title: 'Opciones',
+    rows: [
+      { id: 'menu_cita', title: '📅 Agendar cita', description: 'Reserva una cita ahora' },
+      { id: 'menu_servicios', title: '📋 Servicios', description: 'Ver qué ofrecemos' },
+      { id: 'menu_precios', title: '💰 Precios', description: 'Consultar tarifas' },
+      { id: 'menu_horario', title: '🕐 Horario', description: 'Ver horarios de operación' },
+      { id: 'menu_ubicacion', title: '📍 Ubicación', description: 'Cómo llegar' },
+      { id: 'menu_humano', title: '👤 Hablar con alguien', description: 'Contactar al negocio' },
+    ]
+  }]
+
+  // Add appointment actions if pending
+  if (pendingAppt) {
+    sections.push({
+      title: 'Tu cita pendiente',
+      rows: [
+        { id: 'menu_confirmar', title: '✅ Confirmar cita', description: 'Confirmar tu reservación' },
+        { id: 'menu_reagendar', title: '🔄 Reagendar', description: 'Cambiar fecha u hora' },
+        { id: 'menu_cancelar', title: '❌ Cancelar cita', description: 'Cancelar tu reservación' },
+      ]
+    })
+  }
+
+  return wa.sendInteractiveList(phone, bodyText, 'Ver opciones', sections)
 }
 
 async function handlePrices(phone, biz, tone) {
@@ -398,22 +474,40 @@ async function handleReschedule(phone, pendingAppt, biz) {
 }
 
 async function handleUnknown(phone, biz, tone, name, pendingAppt) {
+  let bodyText = `${greetWord(tone)} ${name} 👋\n\nNo entendí tu mensaje.`
+
   if (pendingAppt) {
     const d = new Date(pendingAppt.starts_at)
-    return wa.sendText(phone,
-      `${greetWord(tone)} ${name} 👋\n\n` +
-      `Tienes una cita: *${pendingAppt.service_name}*\n` +
-      `📅 ${d.toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long', timeZone:'America/Mexico_City' })} ` +
-      `a las ${d.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit', timeZone:'America/Mexico_City' })}\n\n` +
-      `Responde *SÍ* para confirmar o *NO* para cancelar.\n\n` +
-      `Otros comandos: CITA · PRECIOS · HORARIO · SERVICIOS · UBICACIÓN · HUMANO`
-    )
+    bodyText = `${greetWord(tone)} ${name} 👋\n\n`
+    bodyText += `Tienes una cita: *${pendingAppt.service_name}*\n`
+    bodyText += `📅 ${d.toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long', timeZone:'America/Mexico_City' })} `
+    bodyText += `a las ${d.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit', timeZone:'America/Mexico_City' })}`
   }
-  return wa.sendText(phone,
-    `${greetWord(tone)} ${name} 👋\n\n` +
-    `No entendí tu mensaje. Prueba con:\n\n` +
-    `📅 *CITA* — Agendar\n💰 *PRECIOS* — Tarifas\n🕐 *HORARIO* — Horarios\n📋 *SERVICIOS* — Qué ofrecemos\n📍 *UBICACIÓN* — Dirección\n👤 *HUMANO* — Hablar con alguien`
-  )
+
+  const sections = [{
+    title: 'Opciones',
+    rows: [
+      { id: 'menu_cita', title: '📅 Agendar cita' },
+      { id: 'menu_precios', title: '💰 Precios' },
+      { id: 'menu_horario', title: '🕐 Horarios' },
+      { id: 'menu_servicios', title: '📋 Servicios' },
+      { id: 'menu_ubicacion', title: '📍 Ubicación' },
+      { id: 'menu_humano', title: '👤 Hablar con alguien' },
+    ]
+  }]
+
+  if (pendingAppt) {
+    sections.push({
+      title: 'Tu cita',
+      rows: [
+        { id: 'menu_confirmar', title: '✅ Confirmar' },
+        { id: 'menu_cancelar', title: '❌ Cancelar' },
+        { id: 'menu_reagendar', title: '🔄 Reagendar' },
+      ]
+    })
+  }
+
+  return wa.sendInteractiveList(phone, bodyText, 'Ver opciones', sections)
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -433,14 +527,6 @@ async function startBooking(phone, biz, contactName) {
     [biz.id]
   )
 
-  let msg = `📅 *Agendar cita en ${biz.name}*\n\n¿Qué servicio necesitas? Responde con el *número*:\n\n`
-  services.rows.forEach((s, i) => {
-    msg += `${EMOJIS_NUM[i] || (i+1)+'.'} ${s.icon || ''} ${s.name}`
-    if (s.price) msg += ` — $${s.price}`
-    msg += `\n`
-  })
-  msg += `\n_Escribe *CANCELAR* para salir_`
-
   // Check if we know this client
   const client = await db.query(
     'SELECT name FROM clients WHERE business_id = $1 AND phone = $2',
@@ -455,7 +541,14 @@ async function startBooking(phone, biz, contactName) {
     clientName: client.rows[0]?.name || contactName || null,
   })
 
-  return wa.sendText(phone, msg)
+  const bodyText = `📅 *Agendar cita en ${biz.name}*\n\n¿Qué servicio necesitas?`
+  const rows = services.rows.slice(0, 10).map((s, i) => ({
+    id: `svc_${i}`,
+    title: `${s.icon || ''} ${s.name}`.substring(0, 24),
+    description: `${s.duration_min}min${s.price ? ` · $${s.price}` : ''}`,
+  }))
+
+  return wa.sendInteractiveList(phone, bodyText, 'Ver servicios', [{ title: 'Servicios', rows }])
 }
 
 // ─── Helper: generate date selection menu ──────────────────────
@@ -485,19 +578,19 @@ async function sendDateSelection(phone, state) {
 
   if (!dates.length) return wa.sendText(phone, 'No hay días disponibles próximamente. Contacta al negocio.')
 
-  let msg = `📅 *${state.serviceName}* — ¿Qué día?\n\n`
-  dates.forEach((d, i) => {
-    msg += `${EMOJIS_NUM[i]} ${d.label ? d.label + ' (' + d.dayName + ')' : d.dayName}\n`
-  })
-  msg += `\n_Escribe *CANCELAR* para salir_`
-
   setState(phone, {
     ...state,
     step: 'BOOK_SELECT_DATE',
     dates,
   })
 
-  return wa.sendText(phone, msg)
+  const bodyText = `📅 *${state.serviceName}*${state.staffName ? ` con ${state.staffName}` : ''}\n\n¿Qué día prefieres?`
+  const rows = dates.map((d, i) => ({
+    id: `date_${i}`,
+    title: d.label ? `${d.label} (${d.dayName})` : d.dayName,
+  }))
+
+  return wa.sendInteractiveList(phone, bodyText, 'Ver fechas', [{ title: 'Fechas disponibles', rows }])
 }
 
 async function handleBookingStep(phone, text, state, contactName) {
@@ -517,19 +610,21 @@ async function handleBookingStep(phone, text, state, contactName) {
 
       // If multiple staff, show staff selection
       if (state.staffMembers && state.staffMembers.length > 1) {
-        let msg = `👤 *${service.name}* — ¿Con quién deseas tu cita?\n\n`
-        msg += `${EMOJIS_NUM[0]} Cualquier disponible\n`
-        state.staffMembers.forEach((s, i) => {
-          msg += `${EMOJIS_NUM[i + 1]} ${s.name}\n`
-        })
-        msg += `\n_Escribe *CANCELAR* para salir_`
-
         setState(phone, {
           ...updatedState,
           step: 'BOOK_SELECT_STAFF',
         })
 
-        return wa.sendText(phone, msg)
+        const bodyText = `👤 *${service.name}*\n\n¿Con quién deseas tu cita?`
+        const staffRows = [
+          { id: 'staff_0', title: 'Cualquier disponible', description: 'El primero libre' },
+          ...state.staffMembers.map((s, i) => ({
+            id: `staff_${i + 1}`,
+            title: s.name.substring(0, 24),
+          }))
+        ]
+
+        return wa.sendInteractiveList(phone, bodyText, 'Ver profesionales', [{ title: 'Profesionales', rows: staffRows }])
       }
 
       // Single or no staff: skip staff selection
@@ -645,14 +740,8 @@ async function handleBookingStep(phone, text, state, contactName) {
         )
       }
 
-      // Show max 10 slots
+      // Show max 10 slots (WhatsApp list limit)
       const displaySlots = slots.slice(0, 10)
-      let msg = `🕐 *Horarios disponibles para ${selectedDate.dayName}:*\n\n`
-      displaySlots.forEach((s, i) => {
-        msg += `${EMOJIS_NUM[i]} ${s}\n`
-      })
-      if (slots.length > 10) msg += `\n_(y ${slots.length - 10} más)_\n`
-      msg += `\n_Escribe *CANCELAR* para salir_`
 
       setState(phone, {
         ...state,
@@ -661,7 +750,13 @@ async function handleBookingStep(phone, text, state, contactName) {
         slots: displaySlots,
       })
 
-      return wa.sendText(phone, msg)
+      const bodyText = `🕐 *Horarios para ${selectedDate.dayName}*\n\n${state.serviceName}${state.staffName ? ` con ${state.staffName}` : ''}`
+      const rows = displaySlots.map((s, i) => ({
+        id: `time_${i}`,
+        title: s,
+      }))
+
+      return wa.sendInteractiveList(phone, bodyText, 'Ver horarios', [{ title: 'Horarios disponibles', rows }])
     }
 
     case 'BOOK_SELECT_TIME': {
@@ -678,16 +773,19 @@ async function handleBookingStep(phone, text, state, contactName) {
 
         setState(phone, { ...state, step: 'BOOK_FINAL_CONFIRM', time: selectedTime, startsAt })
 
-        return wa.sendText(phone,
+        const summaryText =
           `📋 *Resumen de tu cita:*\n\n` +
           `📌 *Servicio:* ${state.serviceName}\n` +
           (state.staffName ? `✂️ *Con:* ${state.staffName}\n` : '') +
           `📅 *Fecha:* ${dateStr}\n` +
           `🕐 *Hora:* ${selectedTime}\n` +
           `👤 *Nombre:* ${state.clientName}\n` +
-          (state.servicePrice ? `💰 *Precio:* $${state.servicePrice} MXN\n` : '') +
-          `\n¿Confirmas tu cita? Responde *SÍ* para agendar o *NO* para cancelar.`
-        )
+          (state.servicePrice ? `💰 *Precio:* $${state.servicePrice} MXN` : '')
+
+        return wa.sendInteractiveButtons(phone, summaryText, [
+          { id: 'confirm_booking', title: '✅ Confirmar' },
+          { id: 'cancel_booking', title: '❌ Cancelar' },
+        ])
       }
 
       // Ask for name
@@ -705,16 +803,19 @@ async function handleBookingStep(phone, text, state, contactName) {
 
       setState(phone, { ...state, step: 'BOOK_FINAL_CONFIRM', clientName: name, startsAt })
 
-      return wa.sendText(phone,
+      const summaryText =
         `📋 *Resumen de tu cita:*\n\n` +
         `📌 *Servicio:* ${state.serviceName}\n` +
         (state.staffName ? `✂️ *Con:* ${state.staffName}\n` : '') +
         `📅 *Fecha:* ${dateStr}\n` +
         `🕐 *Hora:* ${state.time}\n` +
         `👤 *Nombre:* ${name}\n` +
-        (state.servicePrice ? `💰 *Precio:* $${state.servicePrice} MXN\n` : '') +
-        `\n¿Confirmas tu cita? Responde *SÍ* para agendar o *NO* para cancelar.`
-      )
+        (state.servicePrice ? `💰 *Precio:* $${state.servicePrice} MXN` : '')
+
+      return wa.sendInteractiveButtons(phone, summaryText, [
+        { id: 'confirm_booking', title: '✅ Confirmar' },
+        { id: 'cancel_booking', title: '❌ Cancelar' },
+      ])
     }
 
     case 'BOOK_FINAL_CONFIRM': {
@@ -815,11 +916,38 @@ async function handleBookingStep(phone, text, state, contactName) {
 
         clearState(phone)
 
-        // Send confirmation
+        // Check if business accepts payments and generate payment link
+        const bizPayment = await db.query(
+          'SELECT accept_payments, payment_mode, deposit_percentage FROM businesses WHERE id = $1',
+          [state.businessId]
+        )
+        const paymentConfig = bizPayment.rows[0]
+        let paymentUrl = null
+
+        if (paymentConfig?.accept_payments && service.price > 0) {
+          try {
+            const paymentService = require('./paymentService')
+            const result = await paymentService.generatePaymentLink({
+              appointmentId: apptResult.rows[0].id,
+              businessId: state.businessId,
+              amount: service.price,
+              paymentMode: paymentConfig.payment_mode,
+              depositPercentage: paymentConfig.deposit_percentage,
+              serviceName: service.name,
+              clientName: state.clientName,
+              clientPhone: phone,
+            })
+            paymentUrl = result?.url || null
+          } catch (e) {
+            console.error('WA payment link error:', e)
+          }
+        }
+
+        // Send confirmation (with payment link if available)
         wa.sendConfirmation({
           clientPhone: phone, clientName: state.clientName, businessName: state.businessName,
           serviceName: service.name, startsAt: state.startsAt, price: service.price, slug: state.slug,
-          staffName: assignedStaffName,
+          staffName: assignedStaffName, paymentUrl,
         }).catch(e => console.error('WA confirm error:', e))
 
         // Notify owner
