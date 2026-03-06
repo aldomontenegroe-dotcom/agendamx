@@ -1,6 +1,6 @@
 const db = require('../config/db')
 
-const SUPER_ADMIN_EMAILS = ['aldomontenegro@hotmail.com']
+const SUPER_ADMIN_EMAILS = ['aldomontenegro@hotmail.com', 'aldo@popservices.net']
 
 const superAdminOnly = async (req, res, next) => {
   try {
