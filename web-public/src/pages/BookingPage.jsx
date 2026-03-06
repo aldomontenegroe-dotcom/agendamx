@@ -225,7 +225,7 @@ function Step2DateTime({ slug, service, staffId, onNext, onBack }) {
           <IconBack />
         </button>
         <button onClick={() => onNext({ day: days[selDay], time: selTime })}
-          disabled={!selDay !== null && !selTime}
+          disabled={selDay === null || !selTime}
           style={{
             flex:1, padding:'15px', borderRadius:14, border:'none',
             background: selTime ? 'linear-gradient(135deg, #FF5C3A, #FF7A52)' : 'var(--border)',
@@ -461,7 +461,7 @@ function Step4Confirmation({ business, booking }) {
       </div>
 
       {/* Botón WhatsApp */}
-      <a href={`https://wa.me/523349828421?text=${waMessage}`} target="_blank" rel="noreferrer"
+      <a href={`https://wa.me/${(business.phone || '').replace(/\D/g, '')}?text=${waMessage}`} target="_blank" rel="noreferrer"
         style={{
           display:'flex', alignItems:'center', justifyContent:'center', gap:10,
           padding:'15px', borderRadius:14, textDecoration:'none',

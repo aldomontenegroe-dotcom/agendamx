@@ -247,18 +247,19 @@ async function handleMercadoPagoWebhook(data) {
 // ─── Generar link de pago (intenta Stripe → Mercado Pago) ───────
 async function generatePaymentLink({ appointmentId, businessId }) {
   const appt = await db.query(
-    `SELECT a.id, a.price, a.client_name, a.payment_status,
+    `SELECT a.id, a.price, a.client_name, a.payment_status, a.business_id,
             s.name as service_name,
             b.accept_payments, b.payment_mode, b.deposit_percentage, b.slug,
             b.stripe_connect_account_id, b.mercadopago_access_token
      FROM appointments a
      JOIN services s ON s.id = a.service_id
      JOIN businesses b ON b.id = a.business_id
-     WHERE a.id = $1 AND a.business_id = $2`,
-    [appointmentId, businessId]
+     WHERE a.id = $1${businessId ? ' AND a.business_id = $2' : ''}`,
+    businessId ? [appointmentId, businessId] : [appointmentId]
   )
   if (!appt.rows.length) return null
   const row = appt.rows[0]
+  const resolvedBusinessId = businessId || row.business_id
 
   if (!row.accept_payments || row.payment_status === 'paid') return null
 
@@ -276,7 +277,7 @@ async function generatePaymentLink({ appointmentId, businessId }) {
   if (row.stripe_connect_account_id) {
     try {
       const result = await createStripeSession({
-        businessId,
+        businessId: resolvedBusinessId,
         appointmentId,
         amount,
         clientName: row.client_name,
@@ -292,7 +293,7 @@ async function generatePaymentLink({ appointmentId, businessId }) {
   if (row.mercadopago_access_token) {
     try {
       const result = await createMercadoPagoPreference({
-        businessId,
+        businessId: resolvedBusinessId,
         appointmentId,
         amount,
         clientName: row.client_name,
